@@ -601,5 +601,3 @@ Bloque 2
 6. Mi semana es solo lectura y el historial muestra entrada, salida, duración y extra, sin fotos.
 7. Equipo: filtrar por obra, ver el estado de hoy, corregir una asistencia con motivo y comprobar que al salir de la página el refresco de 60 segundos se detiene.
 8. Avance: mover el porcentaje, rechazar 100 % si el alcance no está completado, y en el móvil añadir la app a la pantalla de inicio (icono y color `#020617`).
-
-
