@@ -11,14 +11,15 @@ Use this guide for the MariaDB database created under **MySQL Databases** in hPa
 
 ## Initialize Laravel
 
-Run as the hPanel SSH user from the private checkout. Use the PHP and Composer executables available for your account. With `composer2` as the executable and `php` pointing to the matching PHP CLI, run:
+Run as the hPanel SSH user from the private checkout. Hostinger can use an older PHP for SSH than for web requests. These commands select PHP 8.3 explicitly. If your account uses a different supported version or path, use that binary for Composer, Artisan and the cron jobs. [Hostinger’s Composer guide](https://www.hostinger.com/support/5792082-how-to-solve-common-composer-issues-at-hostinger/)
 
 ```bash
 cd ~/domains/bluedraft.site/blue-draft-team
-composer2 install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-php artisan key:generate --force
+export PHP_BIN=/opt/alt/php83/usr/bin/php
+"$PHP_BIN" /usr/local/bin/composer2 install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+"$PHP_BIN" artisan key:generate --force
 bash deploy/hostinger/hpanel/deploy.sh
-php artisan logistics:create-worker
+"$PHP_BIN" artisan logistics:create-worker
 ```
 
 Choose **Super Admin**. Generate `APP_KEY` once for a new installation and keep it for future releases. The script installs dependencies, runs migrations and seeds roles, caches Laravel configuration, and copies public assets and a small entry point into `public_html`. The local SQLite database and demo data are separate from this setup.
@@ -28,8 +29,8 @@ Choose **Super Admin**. Generate `APP_KEY` once for a new installation and keep 
 In hPanel, add two cron jobs that run every minute. Replace the example account path and PHP executable with the values confirmed for your account.
 
 ```bash
-cd /home/HOSTINGER_USER/domains/bluedraft.site/blue-draft-team && /usr/bin/php artisan schedule:run >> storage/logs/scheduler.log 2>&1
-cd /home/HOSTINGER_USER/domains/bluedraft.site/blue-draft-team && flock -n storage/framework/worker.lock /usr/bin/php artisan queue:work database --queue=attendance,default,reports --stop-when-empty --max-time=50 --timeout=120 --tries=3 >> storage/logs/worker.log 2>&1
+cd /home/HOSTINGER_USER/domains/bluedraft.site/blue-draft-team && /opt/alt/php83/usr/bin/php artisan schedule:run >> storage/logs/scheduler.log 2>&1
+cd /home/HOSTINGER_USER/domains/bluedraft.site/blue-draft-team && flock -n storage/framework/worker.lock /opt/alt/php83/usr/bin/php artisan queue:work database --queue=attendance,default,reports --stop-when-empty --max-time=50 --timeout=120 --tries=3 >> storage/logs/worker.log 2>&1
 ```
 
 The lock keeps cron runs from starting a second worker while one is active. Confirm that `flock` and one-minute cron are available on your account. The database queue’s retry interval is 180 seconds. Check for failed jobs and confirm that queued mail, attendance calculations and large reports complete on your hosting plan.

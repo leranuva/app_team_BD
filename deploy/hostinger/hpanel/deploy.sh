@@ -5,8 +5,8 @@ umask 0022
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.."
 app_dir=$PWD
 webroot=$app_dir/../public_html
-php_bin=${PHP_BIN:-php}
-composer_bin=${COMPOSER_BIN:-composer2}
+php_bin=${PHP_BIN:-/opt/alt/php83/usr/bin/php}
+composer_bin=${COMPOSER_BIN:-/usr/local/bin/composer2}
 
 if [[ $(basename "$app_dir") != blue-draft-team || ! -d "$webroot" ]]; then
     printf '%s\n' 'Place the checkout at ~/domains/bluedraft.site/blue-draft-team, next to public_html.' >&2
@@ -31,8 +31,8 @@ fi
     exit 1
 }
 
-"$composer_bin" install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-"$composer_bin" check-platform-reqs --no-dev
+"$php_bin" "$composer_bin" install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+"$php_bin" "$composer_bin" check-platform-reqs --no-dev
 "$php_bin" artisan config:clear
 "$php_bin" artisan migrate --seed --force
 "$php_bin" artisan config:cache
