@@ -24,11 +24,11 @@ class PendingChangeOrders extends Page
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reportes';
+    protected static string|UnitEnum|null $navigationGroup = 'Reports';
 
-    protected static ?string $navigationLabel = 'Change orders pendientes';
+    protected static ?string $navigationLabel = 'Pending change orders';
 
-    protected static ?string $title = 'Change orders pendientes';
+    protected static ?string $title = 'Pending change orders';
 
     protected static ?int $navigationSort = 30;
 
@@ -41,14 +41,14 @@ class PendingChangeOrders extends Page
     {
         return $schema->components([
             Form::make([
-                Select::make('job_site_id')->label('Obra')->placeholder('Todas las obras visibles')
+                Select::make('job_site_id')->label('Job site')->placeholder('All visible job sites')
                     ->options(fn (): array => $this->siteOptions())->searchable(),
-                Select::make('status')->label('Estado')->placeholder('Enviadas y en revisión')->options([
+                Select::make('status')->label('Status')->placeholder('Submitted and under review')->options([
                     ChangeOrderStatus::Submitted->value => ChangeOrderStatus::Submitted->label(),
                     ChangeOrderStatus::UnderReview->value => ChangeOrderStatus::UnderReview->label(),
                 ]),
-                DatePicker::make('from')->label('Envío desde')->native(false),
-                DatePicker::make('until')->label('Envío hasta')->native(false),
+                DatePicker::make('from')->label('Submitted from')->native(false),
+                DatePicker::make('until')->label('Submitted through')->native(false),
             ])->statePath('filters')->columns(4)->live(),
             View::make('filament.reports.pending-change-orders')
                 ->viewData(fn (): array => ['rows' => $this->rows()]),
@@ -58,7 +58,7 @@ class PendingChangeOrders extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('export')->label('Descargar Excel')->action(function (): void {
+            Action::make('export')->label('Download Excel')->action(function (): void {
                 $this->notifyExport(app(ReportExportService::class)->exportExcel(
                     PendingChangeOrdersExport::class,
                     $this->filters,

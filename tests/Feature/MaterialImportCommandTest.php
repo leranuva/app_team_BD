@@ -15,7 +15,7 @@ uses(TestCase::class, RefreshDatabase::class);
 it('imports the sample from the command', function (): void {
     $this->artisan('materials:import-cwicr', [
         'file' => database_path('data/cwicr_materials_sample.csv'),
-    ])->assertSuccessful()->expectsOutputToContain('[OK] Importados: 10 · Actualizados: 0 · Omitidos: 0 · Total: 10');
+    ])->assertSuccessful()->expectsOutputToContain('[OK] Imported: 10 · Updated: 0 · Skipped: 0 · Total: 10');
 
     expect(Material::query()->count())->toBe(10)
         ->and(Material::active()->count())->toBe(10)
@@ -26,7 +26,7 @@ it('does not persist a dry run from the command', function (): void {
     $this->artisan('materials:import-cwicr', [
         'file' => database_path('data/cwicr_materials_sample.csv'),
         '--dry-run' => true,
-    ])->assertSuccessful()->expectsOutputToContain('Importados: 10');
+    ])->assertSuccessful()->expectsOutputToContain('Imported: 10');
 
     expect(Material::query()->count())->toBe(0);
 });
@@ -38,7 +38,7 @@ it('truncates and imports when force is present', function (): void {
         'file' => database_path('data/cwicr_materials_sample.csv'),
         '--truncate' => true,
         '--force' => true,
-    ])->assertSuccessful()->expectsOutputToContain('Importados: 10');
+    ])->assertSuccessful()->expectsOutputToContain('Imported: 10');
 
     expect(Material::query()->where('code', 'EXTRA')->exists())->toBeFalse()
         ->and(Material::query()->count())->toBe(10);
@@ -54,7 +54,7 @@ it('refuses to truncate without force when nobody can confirm', function (): voi
     ]);
 
     expect($code)->toBe(1)
-        ->and(Artisan::output())->toContain('Importación cancelada')
+        ->and(Artisan::output())->toContain('Import canceled')
         ->and(Material::query()->where('code', 'EXTRA')->exists())->toBeTrue();
 });
 
@@ -75,7 +75,7 @@ it('explains a truncate blocked by material lists', function (): void {
         'file' => database_path('data/cwicr_materials_sample.csv'),
         '--truncate' => true,
         '--force' => true,
-    ])->assertFailed()->expectsOutputToContain('No se puede truncar: 1 material está referenciado por listas. Elimina esas listas o importa sin --truncate');
+    ])->assertFailed()->expectsOutputToContain('Cannot truncate: 1 material is referenced by lists. Delete those lists or run the import without --truncate');
 
     expect(Material::query()->where('code', 'KEEP')->exists())->toBeTrue()
         ->and(Material::query()->count())->toBe(1);

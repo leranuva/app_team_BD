@@ -15,8 +15,8 @@ it('writes a fixture workbook and a pdf', function (): void {
     expect($pdf)->toStartWith('%PDF')->and(strlen($pdf))->toBeGreaterThan(100);
 
     $sheet = Excel::toArray(new SheetHeadingImport, 'reports-sample/sample-hours.xlsx', 'local')[0];
-    expect($sheet[0]['trabajador'])->toBe('Ana Torres')
-        ->and($sheet[0]['obra'])->toBe('Queens');
+    expect($sheet[0]['worker'])->toBe('Ana Torres')
+        ->and($sheet[0]['job_site'])->toBe('Queens');
 
     Storage::disk('local')->delete(['reports-sample/sample-hours.pdf', 'reports-sample/sample-hours.xlsx']);
 });

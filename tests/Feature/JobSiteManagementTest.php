@@ -11,6 +11,7 @@ use App\Models\ScopePhoto;
 use App\Models\Shift;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -62,6 +63,27 @@ it('lets managers change a site status and rejects a geofence outside 50 to 500 
     expect($this->site->fresh()->geofence_meters)->toBe(150);
 });
 
+it('assigns site supervisors independently of the rest of the team', function (): void {
+    $this->actingAs($this->admin);
+    $this->site->users()->attach($this->carpenter);
+
+    Livewire::test(EditJobSite::class, ['record' => $this->site->getRouteKey()])
+        ->assertFormFieldExists('supervisors', fn (Select $field): bool => isset($field->getOptions()[$this->outsider->id])
+            && ! isset($field->getOptions()[$this->carpenter->id]))
+        ->assertFormSet(['supervisors' => [(string) $this->supervisor->id], 'users' => [(string) $this->carpenter->id]])
+        ->fillForm(['supervisors' => [(string) $this->carpenter->id]])
+        ->call('save')
+        ->assertHasFormErrors(['supervisors.0']);
+
+    Livewire::test(EditJobSite::class, ['record' => $this->site->getRouteKey()])
+        ->fillForm(['supervisors' => [(string) $this->outsider->id]])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($this->site->supervisors()->pluck('users.id')->all())->toBe([$this->outsider->id])
+        ->and($this->site->users()->whereKey($this->carpenter->id)->exists())->toBeTrue();
+});
+
 it('shows the site map and keeps workers out of the Filament resource', function (): void {
     $scope = JobScope::create(['job_site_id' => $this->site->id, 'name' => 'Encofrado', 'status' => 'active', 'progress' => 25]);
     $this->actingAs($this->admin);
@@ -71,7 +93,7 @@ it('shows the site map and keeps workers out of the Filament resource', function
         ->assertSee('data-lat="40.703"', false)
         ->assertSee('data-lng="-73.991"', false)
         ->assertSee('data-radius="150"', false)
-        ->assertSee('Ver en mapa externo')
+        ->assertSee('Open in external map')
         ->assertSee('ScopesRelationManager');
 
     Livewire::test(ScopesRelationManager::class, [
@@ -87,7 +109,7 @@ it('shows the site map and keeps workers out of the Filament resource', function
 
 it('authorizes site reads by role and returns operational counts', function (): void {
     $active = JobScope::create(['job_site_id' => $this->site->id, 'name' => 'Encofrado', 'status' => 'active']);
-    JobScope::create(['job_site_id' => $this->site->id, 'name' => 'Pendiente', 'status' => 'pending']);
+    JobScope::create(['job_site_id' => $this->site->id, 'name' => 'Pending', 'status' => 'pending']);
     ScopePhoto::factory()->create(['job_scope_id' => $active->id, 'uploaded_by' => $this->admin->id]);
     $other = JobSite::factory()->create(['name' => 'Queens']);
     Shift::factory()->create([

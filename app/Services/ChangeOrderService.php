@@ -196,7 +196,7 @@ class ChangeOrderService
 
         $found = JobScope::withoutGlobalScope(LogisticsVisibilityScope::class)->findOrFail($scope->getKey());
         if ((int) $found->job_site_id !== (int) $site->id) {
-            throw ValidationException::withMessages(['job_scope_id' => 'El alcance no pertenece a la obra.']);
+            throw ValidationException::withMessages(['job_scope_id' => 'The scope does not belong to this job site.']);
         }
 
         return $found;

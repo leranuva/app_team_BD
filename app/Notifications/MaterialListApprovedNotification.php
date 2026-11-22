@@ -29,9 +29,9 @@ class MaterialListApprovedNotification extends Notification implements ShouldQue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Lista de materiales aprobada '.$this->code)
+            ->subject('Material list approved '.$this->code)
             ->line($this->title)
-            ->line('La lista fue aprobada.')
-            ->action('Ver operaciones', route('dashboard'));
+            ->line('The material list was approved.')
+            ->action('View operations', route('dashboard'));
     }
 }

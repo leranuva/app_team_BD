@@ -121,7 +121,7 @@ it('lists, uploads, archives and restores photos for the authorized scope', func
 
     $this->disk->delete(ScopePhoto::findOrFail($photoId)->path);
     $this->patchJson('/api/scope-photos/'.$photoId.'/restore')->assertUnprocessable()
-        ->assertJsonPath('message', 'El archivo original ya no está disponible');
+        ->assertJsonPath('message', 'The original file is no longer available');
     expect(ScopePhoto::findOrFail($photoId)->archived_at)->not->toBeNull();
 
     $this->disk->put(ScopePhoto::findOrFail($photoId)->path, 'jpeg');

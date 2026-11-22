@@ -96,19 +96,19 @@ it('rejects a correction from another supervisor, the worker, a bad request and 
     $this->actingAs($this->supervisor)
         ->patchJson(route('api.attendances.correct', $this->attendance), [])
         ->assertUnprocessable()
-        ->assertJsonPath('errors.correction_reason.0', 'El motivo de la corrección es obligatorio.');
+        ->assertJsonPath('errors.correction_reason.0', 'A correction reason is required.');
 
     $this->patchJson(route('api.attendances.correct', $this->attendance), [
         ...$this->payload,
         'correction_reason' => 'corto',
     ])->assertUnprocessable()
-        ->assertJsonPath('errors.correction_reason.0', 'El motivo debe tener al menos 10 caracteres.');
+        ->assertJsonPath('errors.correction_reason.0', 'The reason must contain at least 10 characters.');
 
     $this->patchJson(route('api.attendances.correct', $this->attendance), [
         ...$this->payload,
         'clock_out_at' => '2026-11-23T07:00:00-05:00',
     ])->assertUnprocessable()
-        ->assertJsonPath('errors.clock_out_at.0', 'La salida debe ser posterior a la entrada.');
+        ->assertJsonPath('errors.clock_out_at.0', 'Clock-out must be after clock-in.');
 
     $this->patchJson(route('api.attendances.correct', 999999), $this->payload)->assertNotFound();
 });

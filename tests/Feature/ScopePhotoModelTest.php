@@ -45,7 +45,7 @@ it('derives the site and prevents cross-site associations at both layers', funct
 it('signs only active existing photos for fifteen minutes and retains the archived object', function (): void {
     $this->freezeTime();
     $disk = Storage::fake('s3');
-    $photo = ScopePhoto::factory()->create(['caption' => 'Avance']);
+    $photo = ScopePhoto::factory()->create(['caption' => 'Progress']);
     $signedRequest = null;
     $disk->buildTemporaryUrlsUsing(function (string $path, DateTimeInterface $expiresAt) use (&$signedRequest): string {
         $signedRequest = [$path, $expiresAt->getTimestamp()];

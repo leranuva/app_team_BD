@@ -18,7 +18,7 @@ const order = {
     id: 4,
     code: 'CO-1-2026-0001',
     title: 'Muro',
-    description: 'Extra',
+    description: 'Overtime',
     status: 'under_review',
     amount_dollars: 10,
     time_impact_days: 2,
@@ -44,29 +44,29 @@ afterEach(() => cleanup());
 describe('change orders', () => {
     it('shows the create link only when the role can create', () => {
         const { rerender } = render(<Index orders={[{ ...order, status: 'draft', submitted_at: null }]} filters={{}} canCreate createUrl="/admin/change-orders/create" />);
-        expect(screen.getByRole('link', { name: 'Nuevo' }).getAttribute('href')).toBe('/admin/change-orders/create');
-        expect(screen.getAllByText('Borrador').length).toBeGreaterThan(0);
+        expect(screen.getByRole('link', { name: 'New' }).getAttribute('href')).toBe('/admin/change-orders/create');
+        expect(screen.getAllByText('Draft').length).toBeGreaterThan(0);
 
         rerender(<Index orders={[]} filters={{ status: 'approved' }} canCreate={false} createUrl="/admin/change-orders/create" />);
-        expect(screen.queryByRole('link', { name: 'Nuevo' })).toBeNull();
-        expect(screen.getByText('No hay órdenes con ese filtro.')).toBeTruthy();
+        expect(screen.queryByRole('link', { name: 'New' })).toBeNull();
+        expect(screen.getByText('No change orders match these filters.')).toBeTruthy();
 
         rerender(<Index orders={[]} filters={{ job_site_id: '4', status: 'approved' }} canCreate={false} createUrl="/admin/change-orders/create" />);
-        expect((screen.getByLabelText('Filtrar por obra') as HTMLInputElement).value).toBe('4');
+        expect((screen.getByLabelText('Filter by job site') as HTMLInputElement).value).toBe('4');
     });
 
     it('shows actions from the flags and requires a rejection reason', () => {
         render(<Show order={order} />);
-        expect(screen.getByText('En revisión')).toBeTruthy();
+        expect(screen.getByText('Under review')).toBeTruthy();
         expect(screen.queryByText(/Fuera de presupuesto/)).toBeNull();
         expect(screen.getByRole('link', { name: 'orden.pdf' })).toBeTruthy();
-        expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull();
-        expect(screen.getByRole('button', { name: 'Aprobar' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
-        const confirm = screen.getByRole('button', { name: 'Confirmar' }) as HTMLButtonElement;
+        fireEvent.click(screen.getByRole('button', { name: 'Reject' }));
+        const confirm = screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement;
         expect(confirm.disabled).toBe(true);
-        fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Fuera de presupuesto' } });
+        fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Fuera de presupuesto' } });
         expect(confirm.disabled).toBe(false);
         fireEvent.click(confirm);
         expect(axios.post).toHaveBeenCalledWith('/api/change-orders/4/reject', { reason: 'Fuera de presupuesto' }, expect.any(Object));

@@ -12,16 +12,17 @@ class CreateWorker extends Command
 {
     protected $signature = 'logistics:create-worker';
 
-    protected $description = 'Crea una cuenta interna y le asigna un rol logístico';
+    protected $description = 'Create an internal account and assign an operations role';
 
     public function handle(ProvisionWorker $provisionWorker): int
     {
-        $role = LogisticsRole::from($this->choice('Rol', array_column(LogisticsRole::cases(), 'value')));
+        $roles = collect(LogisticsRole::cases())->keyBy(fn (LogisticsRole $role) => $role->label());
+        $role = $roles->get($this->choice('Role', $roles->keys()->all()));
         $validator = Validator::make([
-            'name' => $this->ask('Nombre'),
-            'email' => strtolower(trim((string) $this->ask('Correo'))),
-            'password' => $this->secret('Contraseña'),
-            'password_confirmation' => $this->secret('Repite la contraseña'),
+            'name' => $this->ask('Name'),
+            'email' => strtolower(trim((string) $this->ask('Email'))),
+            'password' => $this->secret('Password'),
+            'password_confirmation' => $this->secret('Confirm password'),
         ], [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
@@ -37,7 +38,7 @@ class CreateWorker extends Command
         }
 
         $provisionWorker->execute($validator->validated(), $role);
-        $this->info('Cuenta creada.');
+        $this->info('Account created.');
 
         return self::SUCCESS;
     }

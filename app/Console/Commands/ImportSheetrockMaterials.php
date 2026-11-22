@@ -14,7 +14,7 @@ class ImportSheetrockMaterials extends Command
     protected $signature = 'materials:import-sheetrock
         {file? : Ruta al CSV (default: database/data/nyc_sheetrock_types_catalog_en.csv)}';
 
-    protected $description = 'Importa el catálogo de placas de Nueva York en la categoría Drywall';
+    protected $description = 'Import the New York wallboard catalog into the Drywall category';
 
     public function handle(): int
     {
@@ -29,7 +29,7 @@ class ImportSheetrockMaterials extends Command
         }
 
         $this->info(sprintf(
-            '[OK] Importados: %d · Actualizados: %d · Omitidos: %d · Total: %d',
+            '[OK] Imported: %d · Updated: %d · Skipped: %d · Total: %d',
             $result['inserted'],
             $result['updated'],
             $result['skipped'],
@@ -41,7 +41,7 @@ class ImportSheetrockMaterials extends Command
 
     /**
      * El precio del CSV no se guarda. El subtipo, el espesor y el uso van en notes.
-     * La categoría es siempre Drywall, no el valor de Sheetrock_Category.
+     * The catalog category is always Drywall.
      *
      * @return array{inserted: int, updated: int, skipped: int, total: int}
      */
@@ -130,7 +130,7 @@ class ImportSheetrockMaterials extends Command
     private function reader(string $filePath): Reader
     {
         if (! is_file($filePath)) {
-            throw new InvalidArgumentException('No se encontró el CSV en '.$filePath.'.');
+            throw new InvalidArgumentException('CSV file not found at '.$filePath.'.');
         }
 
         try {
@@ -138,13 +138,13 @@ class ImportSheetrockMaterials extends Command
             $csv->setHeaderOffset(0);
             $header = array_map(trim(...), $csv->getHeader());
         } catch (Exception $exception) {
-            throw new InvalidArgumentException('El CSV no tiene una cabecera legible.', previous: $exception);
+            throw new InvalidArgumentException('The CSV header could not be read.', previous: $exception);
         }
 
         $missing = array_diff(['SKU', 'Material_Name', 'Unit'], $header);
         if ($missing !== []) {
             throw new InvalidArgumentException(
-                'El CSV debe incluir SKU, Material_Name y Unit. Columnas encontradas: '.implode(', ', $header).'.'
+                'The CSV must include SKU, Material_Name and Unit. Columns found: '.implode(', ', $header).'.'
             );
         }
 

@@ -2,7 +2,7 @@
     <table class="w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-700 dark:bg-white/5 dark:text-gray-200">
             <tr>
-                @foreach (['Material', 'Unidad', 'Obra', 'Scope', 'Entregado', 'Consumido', '% Consumo', 'Última actualización'] as $heading)
+                @foreach (['Material', 'Unit', 'Job site', 'Scope', 'Delivered', 'Used', '% used', 'Last updated'] as $heading)
                     <th class="px-3 py-2 font-medium">{{ $heading }}</th>
                 @endforeach
             </tr>
@@ -15,7 +15,7 @@
                     @endforeach
                 </tr>
             @empty
-                <tr><td class="px-3 py-4" colspan="8">No hay materiales bajo el umbral de consumo.</td></tr>
+                <tr><td class="px-3 py-4" colspan="8">No materials below the usage threshold.</td></tr>
             @endforelse
         </tbody>
     </table>

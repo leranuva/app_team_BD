@@ -89,7 +89,7 @@ it('duplicates a scope, confirms completion and links the React gallery', functi
     Livewire::test(ViewJobScope::class, ['record' => $this->scope->getRouteKey()])
         ->assertSuccessful()
         ->assertSee('ScopePhotosRelationManager')
-        ->assertSee('Ver fotos')
+        ->assertSee('View photos')
         ->assertSee(route('job-scopes.show', $this->scope), false);
 
     Livewire::test(ShiftsRelationManager::class, [

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ChangeOrderStatus;
+use App\Enums\LogisticsRole;
 use App\Enums\MaterialListStatus;
 use App\Models\Attendance;
 use App\Models\ChangeOrder;
@@ -65,7 +66,7 @@ class ReportQueryService
 
             return [
                 'worker' => $first->user?->name ?? '',
-                'role' => $first->user?->getRoleNames()->sort()->implode(', ') ?? '',
+                'role' => $first->user?->getRoleNames()->map(LogisticsRole::displayName(...))->sort()->implode(', ') ?? '',
                 'site' => $first->jobSite?->name ?? '',
                 'week' => $this->calculator->weekStart($first->clocked_in_at->setTimezone($zone))->toDateString(),
                 'regular_hours' => $this->hours($regular),
@@ -258,7 +259,7 @@ class ReportQueryService
             ],
             'unpriced_items' => $unpriced,
             'range_label' => $bounds === null
-                ? 'Todo el historial'
+                ? 'All dates'
                 : $bounds[0]->setTimezone($zone)->toDateString().' — '.$bounds[1]->setTimezone($zone)->toDateString(),
             'generated_at' => CarbonImmutable::now($zone),
         ];

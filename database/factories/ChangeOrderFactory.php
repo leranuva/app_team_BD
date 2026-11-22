@@ -20,7 +20,7 @@ class ChangeOrderFactory extends Factory
             'job_scope_id' => function (array $attributes): int {
                 return JobScope::query()->create([
                     'job_site_id' => $attributes['job_site_id'],
-                    'name' => 'Alcance',
+                    'name' => 'Scope',
                 ])->id;
             },
             'created_by' => User::factory(),

@@ -2,7 +2,7 @@ import axios, { type AxiosInstance } from 'axios';
 
 export function apiErrorMessage(error: unknown): string {
     if (!axios.isAxiosError(error) || !error.response) {
-        return 'Error de conexión.';
+        return 'Connection error.';
     }
 
     const data = error.response.data as { message?: string; errors?: Record<string, string[]> } | undefined;
@@ -10,21 +10,22 @@ export function apiErrorMessage(error: unknown): string {
 
     switch (error.response.status) {
         case 401:
-            return 'Sesión expirada. Vuelve a iniciar sesión.';
+        case 419:
+            return 'Your session expired. Sign in again.';
         case 403:
-            return 'Sin permisos para esta acción.';
+            return 'You do not have permission to perform this action.';
         case 404:
-            return 'El recurso ya no existe.';
+            return 'This item no longer exists.';
         case 409:
-            return data?.message || 'Conflicto de concurrencia.';
+            return data?.message || 'Another user updated this item.';
         case 422:
-            return first || data?.message || 'Revisa los datos.';
+            return first || data?.message || 'Check the information you entered.';
         case 429:
-            return 'Demasiadas solicitudes. Espera un momento.';
+            return 'Too many requests. Try again shortly.';
         default:
             return error.response.status >= 500
-                ? 'Error del servidor. Intenta de nuevo.'
-                : (data?.message || 'No se pudo completar la acción.');
+                ? 'Server error. Try again.'
+                : (data?.message || 'Could not complete the action.');
     }
 }
 

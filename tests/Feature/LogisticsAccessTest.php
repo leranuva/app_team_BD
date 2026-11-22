@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Policies\JobSitePolicy;
 use App\Policies\LogisticsRecordPolicy;
 use App\Policies\ManagementRolePolicy;
+use Filament\Forms\Components\Select;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -150,6 +151,8 @@ class LogisticsAccessTest extends TestCase
         $this->actingAs($this->worker(LogisticsRole::Administrator));
 
         Livewire::test(CreateJobSite::class)
+            ->assertFormFieldExists('users', fn (Select $field): bool => $field->isPreloaded()
+                && ($field->getOptions()[$worker->id] ?? null) === $worker->name)
             ->fillForm([
                 'name' => 'Queens',
                 'address' => 'Queens, NY',

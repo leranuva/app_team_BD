@@ -21,10 +21,10 @@ type ScopeCard = {
 };
 
 const statusLabel: Record<string, string> = {
-    pending: 'Pendiente',
-    active: 'Activo',
-    in_progress: 'En progreso',
-    completed: 'Completado',
+    pending: 'Pending',
+    active: 'Active',
+    in_progress: 'In progress',
+    completed: 'Completed',
 };
 
 export default function ScopeProgress({ timeZone, sites, jobSiteId, scopes }: {
@@ -53,14 +53,14 @@ export default function ScopeProgress({ timeZone, sites, jobSiteId, scopes }: {
     async function save(scope: ScopeCard) {
         const progress = drafts[scope.id] ?? scope.progress_percent;
         if (progress === 100 && scope.status !== 'completed') {
-            setErrors((current) => ({ ...current, [scope.id]: 'El avance del 100 % solo corresponde a un alcance completado.' }));
+            setErrors((current) => ({ ...current, [scope.id]: 'Progress can reach 100% only after the scope is complete.' }));
             return;
         }
         setPending(scope.id);
         setErrors((current) => ({ ...current, [scope.id]: '' }));
         try {
             await axios.patch(`/api/job-scopes/${scope.id}`, { progress }, { headers: { Accept: 'application/json' } });
-            toast.success('Avance actualizado.', { toasterId: 'scopes' });
+            toast.success('Progress updated.', { toasterId: 'scopes' });
             router.reload({ only: ['scopes'] });
         } catch (error) {
             setErrors((current) => ({ ...current, [scope.id]: apiErrorMessage(error) }));
@@ -70,50 +70,50 @@ export default function ScopeProgress({ timeZone, sites, jobSiteId, scopes }: {
     }
 
     return (
-        <AppLayout header={<h1 className="text-2xl font-semibold text-slate-950">Avance de alcances</h1>}>
-            <Head title="Avance de alcances" />
-            <Toaster id="scopes" containerAriaLabel="Avisos de avance" />
+        <AppLayout header={<h1 className="text-2xl font-semibold text-slate-950">Scope progress</h1>}>
+            <Head title="Scope progress" />
+            <Toaster id="scopes" containerAriaLabel="Progress notifications" />
             <div className="mx-auto max-w-4xl px-4 py-6 text-base text-slate-950">
-                <label className="grid max-w-sm gap-2 font-semibold">Obra
-                    <select aria-label="Obra" className="min-h-12 rounded-lg border-slate-300" value={jobSiteId ?? ''} onChange={(event) => filter(event.target.value)}>
-                        <option value="">Todas</option>
+                <label className="grid max-w-sm gap-2 font-semibold">Job site
+                    <select aria-label="Job site" className="min-h-12 rounded-lg border-slate-300" value={jobSiteId ?? ''} onChange={(event) => filter(event.target.value)}>
+                        <option value="">All</option>
                         {sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}
                     </select>
                 </label>
                 <div className="mt-5 grid gap-4">
-                    {scopes.length === 0 && <p>No hay alcances en esta vista.</p>}
+                    {scopes.length === 0 && <p>There are no scopes in this view.</p>}
                     {scopes.map((scope) => {
                         const value = drafts[scope.id] ?? scope.progress_percent;
                         return (
                             <article key={scope.id} className="rounded-xl border border-slate-200 bg-white p-5">
                                 <h2 className="text-lg font-semibold">{scope.name}</h2>
-                                <p className="mt-1">{scope.job_site?.name} · {statusLabel[scope.status] ?? scope.status} · {scope.responsible ?? 'Sin responsable'}</p>
-                                <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-label={`Avance de ${scope.name}`}>
+                                <p className="mt-1">{scope.job_site?.name} · {statusLabel[scope.status] ?? scope.status} · {scope.responsible ?? 'Unassigned'}</p>
+                                <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-label={`Progress for ${scope.name}`}>
                                     <div className="h-full bg-slate-950" style={{ width: `${value}%` }} />
                                 </div>
                                 <p className="mt-2">{value} %</p>
                                 {scope.can_edit && (
                                     <div className="mt-3 grid gap-2">
-                                        <label className="text-sm font-semibold">Actualizar avance
-                                            <input type="range" min={0} max={100} aria-label={`Actualizar avance de ${scope.name}`} className="mt-2 w-full" value={value} onChange={(event) => setDrafts((current) => ({ ...current, [scope.id]: Number(event.target.value) }))} />
+                                        <label className="text-sm font-semibold">Update progress
+                                            <input type="range" min={0} max={100} aria-label={`Update progress for ${scope.name}`} className="mt-2 w-full" value={value} onChange={(event) => setDrafts((current) => ({ ...current, [scope.id]: Number(event.target.value) }))} />
                                         </label>
                                         <button type="button" className="min-h-12 w-fit rounded-lg bg-slate-950 px-4 font-semibold text-white disabled:opacity-60" disabled={pending === scope.id} onClick={() => { void save(scope); }}>
-                                            Guardar
+                                            Save
                                         </button>
                                         {errors[scope.id] && <p role="alert">{errors[scope.id]}</p>}
                                     </div>
                                 )}
-                                <p className="mt-3">Órdenes pendientes: {scope.pending_change_orders} · Listas pendientes: {scope.pending_material_lists}</p>
+                                <p className="mt-3">Pending change orders: {scope.pending_change_orders} · Pending lists: {scope.pending_material_lists}</p>
                                 <ul className="mt-2">
                                     {scope.today_shifts.map((shift) => (
-                                        <li key={shift.id}>{shift.worker ?? 'Trabajador'} · <time dateTime={shift.starts_at}>{new Intl.DateTimeFormat('es-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone }).format(new Date(shift.starts_at))}</time></li>
+                                        <li key={shift.id}>{shift.worker ?? 'Worker'} · <time dateTime={shift.starts_at}>{new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone }).format(new Date(shift.starts_at))}</time></li>
                                     ))}
                                 </ul>
                                 {scope.photos.length > 0 && (
                                     <ul className="mt-3 flex gap-3">
                                         {scope.photos.map((photo) => (
                                             <li key={photo.id}>
-                                                {photo.url && <img src={photo.url} alt={photo.caption ?? 'Foto reciente'} className="h-16 w-16 rounded object-cover" />}
+                                                {photo.url && <img src={photo.url} alt={photo.caption ?? 'Recent photo'} className="h-16 w-16 rounded object-cover" />}
                                                 {photo.caption && <p className="max-w-16 text-xs">{photo.caption}</p>}
                                             </li>
                                         ))}

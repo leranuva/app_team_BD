@@ -2,15 +2,15 @@
     <table class="w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-700 dark:bg-white/5 dark:text-gray-200">
             <tr>
-                <th class="px-3 py-2 font-medium">Trabajador</th>
-                <th class="px-3 py-2 font-medium">Rol</th>
-                <th class="px-3 py-2 font-medium">Obra</th>
-                <th class="px-3 py-2 font-medium">Semana</th>
-                <th class="px-3 py-2 font-medium">Horas regulares</th>
-                <th class="px-3 py-2 font-medium">Horas extra</th>
-                <th class="px-3 py-2 font-medium">Doble tiempo</th>
+                <th class="px-3 py-2 font-medium">Worker</th>
+                <th class="px-3 py-2 font-medium">Role</th>
+                <th class="px-3 py-2 font-medium">Job site</th>
+                <th class="px-3 py-2 font-medium">Week</th>
+                <th class="px-3 py-2 font-medium">Regular hours</th>
+                <th class="px-3 py-2 font-medium">Overtime</th>
+                <th class="px-3 py-2 font-medium">Double time</th>
                 <th class="px-3 py-2 font-medium">Total</th>
-                <th class="px-3 py-2 font-medium">Costo (USD)</th>
+                <th class="px-3 py-2 font-medium">Cost (USD)</th>
             </tr>
         </thead>
         <tbody>
@@ -28,7 +28,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td class="px-3 py-4 text-gray-600 dark:text-gray-300" colspan="9">No hay asistencias cerradas en este rango.</td>
+                    <td class="px-3 py-4 text-gray-600 dark:text-gray-300" colspan="9">There are no completed time entries in this date range.</td>
                 </tr>
             @endforelse
         </tbody>

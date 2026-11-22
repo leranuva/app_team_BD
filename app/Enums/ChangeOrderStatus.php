@@ -14,12 +14,12 @@ enum ChangeOrderStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Draft => 'Borrador',
-            self::Submitted => 'Enviada',
-            self::UnderReview => 'En revisión',
-            self::Approved => 'Aprobada',
-            self::Rejected => 'Rechazada',
-            self::Cancelled => 'Cancelada',
+            self::Draft => 'Draft',
+            self::Submitted => 'Submitted',
+            self::UnderReview => 'Under review',
+            self::Approved => 'Approved',
+            self::Rejected => 'Rejected',
+            self::Cancelled => 'Canceled',
         };
     }
 }

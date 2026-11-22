@@ -18,7 +18,7 @@ class ShiftFactory extends Factory
 
         return [
             'job_site_id' => JobSite::factory(),
-            'user_id' => User::factory()->afterCreating(fn (User $worker) => $worker->assignRole(Role::findOrCreate(ShiftRole::Carpenter->label(), 'web'))),
+            'user_id' => User::factory()->afterCreating(fn (User $worker) => $worker->assignRole(Role::findOrCreate(ShiftRole::Carpenter->logisticsRole()->value, 'web'))),
             'role_required' => ShiftRole::Carpenter,
             'status' => ShiftStatus::Programmed,
             'starts_at' => $start,

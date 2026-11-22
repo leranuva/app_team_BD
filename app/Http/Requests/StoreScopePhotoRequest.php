@@ -33,10 +33,10 @@ class StoreScopePhotoRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file.required' => 'Selecciona una foto.',
-            'file.image' => 'Sube una imagen JPEG, PNG o WebP.',
-            'file.mimes' => 'Sube una imagen JPEG, PNG o WebP.',
-            'file.max' => 'La foto no puede superar 10 MB.',
+            'file.required' => 'Select a photo.',
+            'file.image' => 'Upload a JPEG, PNG or WebP image.',
+            'file.mimes' => 'Upload a JPEG, PNG or WebP image.',
+            'file.max' => 'The photo must be 10 MB or smaller.',
         ];
     }
 }

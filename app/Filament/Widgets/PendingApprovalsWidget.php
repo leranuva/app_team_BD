@@ -15,7 +15,7 @@ class PendingApprovalsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 21;
 
-    protected ?string $heading = 'Pendientes de aprobación';
+    protected ?string $heading = 'Awaiting approval';
 
     public static function canView(): bool
     {
@@ -32,8 +32,8 @@ class PendingApprovalsWidget extends StatsOverviewWidget
         $lists = $user instanceof User ? $reports->pendingMaterialListCount($user) : 0;
 
         return [
-            Stat::make('Change orders pendientes', $orders)->url(PendingChangeOrders::getUrl()),
-            Stat::make('Listas pendientes', $lists)->url(MaterialListResource::getUrl('index')),
+            Stat::make('Pending change orders', $orders)->url(PendingChangeOrders::getUrl()),
+            Stat::make('Pending lists', $lists)->url(MaterialListResource::getUrl('index')),
         ];
     }
 }

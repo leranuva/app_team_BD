@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <style>
@@ -12,14 +12,14 @@
     </style>
 </head>
 <body>
-    <h1>Muestra de exportación</h1>
-    <p>Generado {{ $generatedAt->format('Y-m-d H:i') }} ({{ config('app.business_timezone') }}).</p>
+    <h1>Export sample</h1>
+    <p>Generated {{ $generatedAt->format('Y-m-d H:i') }} ({{ config('app.business_timezone') }}).</p>
     <table>
         <thead>
             <tr>
-                <th>Trabajador</th>
-                <th>Obra</th>
-                <th>Horas extra</th>
+                <th>Worker</th>
+                <th>Job site</th>
+                <th>Overtime</th>
             </tr>
         </thead>
         <tbody>

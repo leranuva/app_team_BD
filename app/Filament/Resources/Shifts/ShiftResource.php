@@ -37,9 +37,9 @@ class ShiftResource extends Resource
 {
     protected static ?string $model = Shift::class;
 
-    protected static ?string $modelLabel = 'turno';
+    protected static ?string $modelLabel = 'shift';
 
-    protected static ?string $pluralModelLabel = 'turnos';
+    protected static ?string $pluralModelLabel = 'shifts';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
@@ -55,7 +55,7 @@ class ShiftResource extends Resource
 
     public static function fields(bool $multiple = false): array
     {
-        $worker = Select::make($multiple ? 'workers' : 'user_id')->label($multiple ? 'Trabajadores' : 'Trabajador')
+        $worker = Select::make($multiple ? 'workers' : 'user_id')->label($multiple ? 'Workers' : 'Worker')
             ->multiple($multiple)->required()->searchable()
             ->options(function (Get $get): array {
                 $role = ShiftRole::tryFrom((string) $get('role_required'));
@@ -66,57 +66,57 @@ class ShiftResource extends Resource
             });
 
         return [
-            Select::make('job_site_id')->label('Obra')->options(fn () => self::sites())->required()->searchable()->live()
+            Select::make('job_site_id')->label('Job site')->options(fn () => self::sites())->required()->searchable()->live()
                 ->afterStateUpdated(function (Set $set) use ($multiple): void {
                     $set('job_scope_id', null);
                     $set($multiple ? 'workers' : 'user_id', $multiple ? [] : null);
                 }),
-            Select::make('job_scope_id')->label('Alcance')->searchable()
+            Select::make('job_scope_id')->label('Scope')->searchable()
                 ->options(fn (Get $get) => JobScope::where('job_site_id', $get('job_site_id'))->orderBy('name')->pluck('name', 'id')),
-            Select::make('role_required')->label('Rol requerido')->options(self::roles())->required()->live()
+            Select::make('role_required')->label('Required role')->options(self::roles())->required()->live()
                 ->afterStateUpdated(fn (Set $set) => $set($multiple ? 'workers' : 'user_id', $multiple ? [] : null)),
             $worker,
-            DateTimePicker::make('starts_at')->label('Inicio')->timezone(config('app.business_timezone'))->seconds(false)->required(),
-            DateTimePicker::make('ends_at')->label('Fin')->timezone(config('app.business_timezone'))->seconds(false)->required()->after('starts_at'),
-            Select::make('status')->label('Estado')->options(self::statuses(false))->default(ShiftStatus::Programmed->value)->required(),
-            Textarea::make('notes')->label('Notas')->maxLength(5000)->columnSpanFull(),
+            DateTimePicker::make('starts_at')->label('Start')->timezone(config('app.business_timezone'))->seconds(false)->required(),
+            DateTimePicker::make('ends_at')->label('End')->timezone(config('app.business_timezone'))->seconds(false)->required()->after('starts_at'),
+            Select::make('status')->label('Status')->options(self::statuses(false))->default(ShiftStatus::Programmed->value)->required(),
+            Textarea::make('notes')->label('Notes')->maxLength(5000)->columnSpanFull(),
         ];
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('starts_at')->label('Inicio')->dateTime('M j, Y H:i', config('app.business_timezone'))->sortable(),
-            TextColumn::make('ends_at')->label('Fin')->dateTime('M j, Y H:i', config('app.business_timezone')),
-            TextColumn::make('jobSite.name')->label('Obra')->searchable(),
-            TextColumn::make('worker.name')->label('Trabajador')->searchable()
+            TextColumn::make('starts_at')->label('Start')->dateTime('M j, Y H:i', config('app.business_timezone'))->sortable(),
+            TextColumn::make('ends_at')->label('End')->dateTime('M j, Y H:i', config('app.business_timezone')),
+            TextColumn::make('jobSite.name')->label('Job site')->searchable(),
+            TextColumn::make('worker.name')->label('Worker')->searchable()
                 ->icon('heroicon-o-user-circle')
                 ->description(fn (Shift $record): string => $record->worker?->roles->pluck('name')->join(', ') ?? ''),
-            TextColumn::make('role_required')->label('Rol requerido')->state(fn (Shift $record) => $record->role_required?->label() ?? $record->requiredRole?->name),
-            TextColumn::make('status')->label('Estado')->badge()
+            TextColumn::make('role_required')->label('Required role')->state(fn (Shift $record) => $record->effectiveRole()?->label()),
+            TextColumn::make('status')->label('Status')->badge()
                 ->formatStateUsing(fn (ShiftStatus $state) => $state->label())
                 ->color(fn (ShiftStatus $state) => $state->color()),
-            TextColumn::make('duration')->label('Duración')
+            TextColumn::make('duration')->label('Duration')
                 ->state(fn (Shift $record): string => round($record->starts_at->diffInMinutes($record->ends_at)).' min'),
         ])->filters([
-            SelectFilter::make('job_site_id')->label('Obra')->options(fn () => self::sites()),
-            SelectFilter::make('role_required')->label('Rol requerido')->options(self::roles())
+            SelectFilter::make('job_site_id')->label('Job site')->options(fn () => self::sites()),
+            SelectFilter::make('role_required')->label('Required role')->options(self::roles())
                 ->query(function (Builder $query, array $data): Builder {
                     $role = ShiftRole::tryFrom((string) ($data['value'] ?? ''));
 
                     return $query->when($role, fn (Builder $shifts) => $shifts->withRequiredRole($role));
                 }),
-            SelectFilter::make('status')->label('Estado')->options(self::statuses()),
-            SelectFilter::make('user_id')->label('Trabajador')->searchable()
+            SelectFilter::make('status')->label('Status')->options(self::statuses()),
+            SelectFilter::make('user_id')->label('Worker')->searchable()
                 ->options(fn () => User::workersVisibleTo(Auth::user())->orderBy('name')->pluck('name', 'id')),
-            Filter::make('period')->label('Fechas')
-                ->schema([DatePicker::make('from')->label('Desde'), DatePicker::make('to')->label('Hasta')->afterOrEqual('from')])
+            Filter::make('period')->label('Dates')
+                ->schema([DatePicker::make('from')->label('From'), DatePicker::make('to')->label('To')->afterOrEqual('from')])
                 ->query(fn (Builder $query, array $data) => $query
                     ->when($data['from'] ?? null, fn (Builder $shifts, string $date) => $shifts->where('ends_at', '>', self::localDay($date)->utc()))
                     ->when($data['to'] ?? null, fn (Builder $shifts, string $date) => $shifts->where('starts_at', '<', self::localDay($date)->addDay()->utc()))),
         ])->recordActions([
             EditAction::make(),
-            Action::make('duplicate')->label('Duplicar')->authorize('update')
+            Action::make('duplicate')->label('Duplicate')->authorize('update')
                 ->schema(fn () => self::fields())
                 ->fillForm(fn (Shift $record): array => self::formData($record) + [
                     'starts_at' => $record->starts_at->setTimezone(config('app.business_timezone'))->addDay()->utc()->format('Y-m-d H:i:s'),
@@ -125,16 +125,16 @@ class ShiftResource extends Resource
                 ->action(function (array $data): void {
                     try {
                         app(ShiftService::class)->save(Auth::user(), null, $data);
-                        Notification::make()->title('Turno duplicado')->success()->send();
+                        Notification::make()->title('Shift duplicated')->success()->send();
                     } catch (ValidationException $exception) {
-                        Notification::make()->title('No se pudo duplicar el turno')
+                        Notification::make()->title('Could not duplicate the shift')
                             ->body($exception->validator->errors()->first())->danger()->send();
                     }
                 }),
-            Action::make('cancel')->label('Cancelar')->color('danger')->authorize('cancel')
-                ->schema([Textarea::make('reason')->label('Motivo')->required()->maxLength(1000)])
+            Action::make('cancel')->label('Cancel')->color('danger')->authorize('cancel')
+                ->schema([Textarea::make('reason')->label('Reason')->required()->maxLength(1000)])
                 ->action(fn (Shift $record, array $data) => app(ShiftService::class)->cancel(Auth::user(), $record, $data['reason']))
-                ->successNotificationTitle('Turno cancelado'),
+                ->successNotificationTitle('Shift canceled'),
         ])->defaultSort('starts_at', 'desc');
     }
 

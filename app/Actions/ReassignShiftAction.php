@@ -23,7 +23,7 @@ class ReassignShiftAction
         $end = $endAt->utc()->startOfSecond();
 
         if ($end->lessThanOrEqualTo($start)) {
-            throw ValidationException::withMessages(['end_at' => 'El fin debe ser posterior al inicio con precisión de segundos.']);
+            throw ValidationException::withMessages(['end_at' => 'The end time must be after the start time, to the second.']);
         }
 
         [$record, $previousStart, $previousEnd] = DB::transaction(function () use ($actor, $shift, $start, $end, $expectedUpdatedAt): array {

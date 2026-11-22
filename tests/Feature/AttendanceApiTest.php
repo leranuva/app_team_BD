@@ -2,6 +2,7 @@
 
 use App\Enums\LogisticsRole;
 use App\Models\Attendance;
+use App\Models\JobSite;
 use App\Models\Shift;
 use App\Models\User;
 use App\Notifications\AttendanceOutsideGeofenceNotification;
@@ -58,6 +59,52 @@ it('notifies only active assigned supervisors and deduplicates rejected punches'
     Notification::assertNotSentTo([$inactive, $outside], AttendanceOutsideGeofenceNotification::class);
 });
 
+it('records separate punches and hours when a worker transfers to a second job site', function (): void {
+    $firstSite = $this->shift->jobSite;
+    $secondSite = JobSite::factory()->create(['name' => 'Brooklyn', 'latitude' => 40.69, 'longitude' => -73.99]);
+    $secondShift = Shift::factory()->for($secondSite)->for($this->worker, 'worker')->create([
+        'starts_at' => now()->addHours(9)->addMinutes(15),
+        'ends_at' => now()->addHours(11),
+    ]);
+    $supervisor = User::factory()->create()->assignRole(LogisticsRole::Supervisor->value);
+    $supervisor->jobSites()->attach([$firstSite->id, $secondSite->id]);
+    $position = fn (Shift $shift, JobSite $site): array => [
+        'shift_id' => $shift->id, 'lat' => $site->latitude, 'lng' => $site->longitude,
+        'accuracy' => 20, 'timestamp' => now()->toIso8601String(),
+    ];
+
+    $this->actingAs($this->worker)->postJson('/api/attendances/clock-in', $position($this->shift, $firstSite))->assertCreated();
+    $this->get('/worker/today')->assertInertia(fn (Assert $page) => $page
+        ->has('shifts', 2)
+        ->where('clock.open.shift_id', $this->shift->id)
+        ->where('clock.shifts.0.id', $secondShift->id));
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-23T21:00:00Z'));
+    $this->postJson('/api/attendances/clock-in', $position($secondShift, $secondSite))
+        ->assertUnprocessable()->assertJsonValidationErrors('shift_id');
+    $this->postJson('/api/attendances/clock-out', $position($this->shift, $firstSite))
+        ->assertOk()->assertJsonPath('data.duration_minutes', 480);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-23T21:50:00Z'));
+    $this->postJson('/api/attendances/clock-in', $position($secondShift, $firstSite))
+        ->assertUnprocessable()->assertJsonValidationErrors('location');
+    $this->postJson('/api/attendances/clock-in', $position($secondShift, $secondSite))
+        ->assertCreated()->assertJsonPath('data.job_site_id', $secondSite->id);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-23T23:00:00Z'));
+    $this->postJson('/api/attendances/clock-out', $position($secondShift, $secondSite))
+        ->assertOk()->assertJsonPath('data.overtime_minutes', 70);
+    $this->assertDatabaseCount('attendances', 2);
+    $this->get('/worker/today')->assertInertia(fn (Assert $page) => $page
+        ->where('shifts.0.clocked_out_at', '2026-11-23T16:00:00-05:00')
+        ->where('shifts.1.clocked_in_at', '2026-11-23T16:50:00-05:00')
+        ->where('shifts.1.clocked_out_at', '2026-11-23T18:00:00-05:00'));
+    $this->actingAs($supervisor)->get('/supervisor/team')->assertInertia(fn (Assert $page) => $page
+        ->has('team', 2)
+        ->where('team.0.shift_id', $this->shift->id)
+        ->where('team.1.shift_id', $secondShift->id));
+});
+
 it('rejects punches for another worker on both routes and validates the sample', function (): void {
     Notification::fake();
     $supervisor = User::factory()->create()->assignRole(LogisticsRole::Supervisor->value);
@@ -69,6 +116,40 @@ it('rejects punches for another worker on both routes and validates the sample',
         'lat' => 91, 'timestamp' => '2026-11-23T08:00:00',
     ]))->assertUnprocessable()->assertJsonValidationErrors(['lat', 'timestamp']);
     Notification::assertNothingSent();
+});
+
+it('resumes work at assigned sites after clocking out, including a return to the same site', function (): void {
+    $first = $this->shift->jobSite;
+    $second = JobSite::factory()->create(['status' => 'active', 'latitude' => 40.69, 'longitude' => -73.99]);
+    $this->worker->jobSites()->attach($second);
+    $payload = fn (JobSite $site): array => [
+        'job_site_id' => $site->id, 'lat' => $site->latitude, 'lng' => $site->longitude,
+        'accuracy' => 20, 'timestamp' => now()->toIso8601String(),
+    ];
+    $url = '/api/attendances/clock-in';
+
+    $this->actingAs($this->worker)->postJson($url, $payload($second))->assertForbidden();
+    $this->postJson($url, $this->position)->assertCreated();
+    $this->travel(1)->hours();
+    $this->postJson('/api/attendances/clock-out', array_replace($this->position, ['timestamp' => now()->toIso8601String()]))->assertOk();
+    $this->get('/worker/today')->assertInertia(fn (Assert $page) => $page->has('clock.sites', 2));
+    $this->postJson($url, $payload(JobSite::factory()->create()))->assertForbidden();
+    $this->postJson($url, array_replace($payload($second), ['lat' => $first->latitude, 'lng' => $first->longitude]))
+        ->assertUnprocessable()->assertJsonValidationErrors('location');
+    $this->assertDatabaseCount('shifts', 1);
+
+    $again = $this->postJson($url, $payload($first))->assertCreated()->json('data.shift_id');
+    expect($again)->not->toBe($this->shift->id);
+    $this->postJson($url, $payload($second))->assertUnprocessable();
+    $this->travel(10)->minutes();
+    $this->postJson('/api/attendances/clock-out', [
+        ...array_diff_key($payload($first), ['job_site_id' => true]), 'shift_id' => $again,
+    ])->assertOk()->assertJsonPath('data.duration_minutes', 10);
+
+    $transfer = $this->postJson($url, $payload($second))->assertCreated()
+        ->assertJsonPath('data.job_site_id', $second->id)->json('data.shift_id');
+    expect(Shift::findOrFail($transfer)->is_unscheduled)->toBeTrue();
+    $this->assertDatabaseCount('attendances', 3);
 });
 
 it('keeps an attendance open on an outside checkout and alerts its supervisor', function (): void {

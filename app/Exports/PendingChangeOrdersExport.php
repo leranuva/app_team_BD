@@ -27,7 +27,7 @@ class PendingChangeOrdersExport implements FromQuery, ShouldAutoSize, WithHeadin
 
     public function headings(): array
     {
-        return ['Código', 'Título', 'Obra', 'Scope', 'Solicitado por', 'Estado', 'Monto', 'Días de impacto', 'Fecha de envío'];
+        return ['Code', 'Title', 'Job site', 'Scope', 'Requested by', 'Status', 'Amount', 'Schedule impact (days)', 'Submitted on'];
     }
 
     /**

@@ -11,6 +11,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -28,12 +29,16 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('Logística de Obra')
+            ->brandName('Blue Draft')
             ->brandLogo(fn () => view('filament.brand'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('brand/favicon.ico'))
+            ->sidebarCollapsibleOnDesktop()
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.theme'))
             ->databaseTransactions()
             ->plugin(FilamentShieldPlugin::make())
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => '#336699',
                 'gray' => Color::Slate,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

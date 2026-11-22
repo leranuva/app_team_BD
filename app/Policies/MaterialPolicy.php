@@ -7,8 +7,8 @@ use App\Models\Material;
 use App\Models\User;
 
 /**
- * Super Admin y Administrador gestionan el catálogo. El supervisor solo lo consulta
- * para armar listas. Carpintero y Ayudante no entran. Un material referenciado no se borra.
+ * Super admins and administrators manage the catalog. Supervisors can browse it
+ * to build lists. Materials referenced by a list cannot be deleted.
  */
 class MaterialPolicy
 {

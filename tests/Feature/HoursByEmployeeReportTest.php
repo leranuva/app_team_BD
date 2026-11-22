@@ -55,16 +55,17 @@ it('exports closed hours for three workers and skips an open punch', function ()
     Storage::disk('local')->delete('reports/hours.xlsx');
 
     expect($sheet)->toHaveCount(3)
-        ->and(collect($sheet)->pluck('trabajador')->all())->toBe(['Luis Peña', 'Marta Díaz', 'Pedro Cruz'])
-        ->and((string) collect($sheet)->firstWhere('trabajador', 'Marta Díaz')['horas_extra'])->toBe('1')
-        ->and((string) collect($sheet)->firstWhere('trabajador', 'Pedro Cruz')['costo_usd'])->toBe('200');
+        ->and(collect($sheet)->pluck('worker')->all())->toBe(['Luis Peña', 'Marta Díaz', 'Pedro Cruz'])
+        ->and((string) collect($sheet)->firstWhere('worker', 'Marta Díaz')['overtime'])->toBe('1')
+        ->and((string) collect($sheet)->firstWhere('worker', 'Pedro Cruz')['cost_usd'])->toBe('200');
 
     $this->actingAs($this->admin);
     Livewire::test(HoursByEmployee::class)
         ->assertSee('Luis Peña')
         ->assertSee('Marta Díaz')
         ->assertSee('Pedro Cruz')
-        ->assertActionExists('export');
+        ->callAction('export')
+        ->assertFileDownloaded('hours-by-employee.xlsx', contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 });
 
 function hoursReportPunch(string $name, int $hours, int $overtimeMinutes, ?string $rate, string $at = '2026-11-23 08:00:00', bool $corrected = false): Attendance

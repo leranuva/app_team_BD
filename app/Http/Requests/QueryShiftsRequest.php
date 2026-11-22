@@ -44,9 +44,9 @@ class QueryShiftsRequest extends FormRequest
             $to = $this->boundary('to');
 
             if ($to->lessThan($from)) {
-                $validator->errors()->add('to', 'El fin del rango debe ser igual o posterior al inicio.');
+                $validator->errors()->add('to', 'The end date must be on or after the start date.');
             } elseif ($to->greaterThan($from->addDays(90))) {
-                $validator->errors()->add('to', 'El rango puede abarcar como máximo 90 días.');
+                $validator->errors()->add('to', 'The date range can cover up to 90 days.');
             }
         }];
     }

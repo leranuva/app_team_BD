@@ -18,9 +18,9 @@ class ImportMaterials extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-up-tray';
 
-    protected static ?string $navigationLabel = 'Importar materiales';
+    protected static ?string $navigationLabel = 'Import materials';
 
-    protected static ?string $title = 'Importar materiales';
+    protected static ?string $title = 'Import materials';
 
     public static function canAccess(): bool
     {
@@ -31,10 +31,10 @@ class ImportMaterials extends Page
     {
         return [
             Action::make('import')
-                ->label('Importar')
+                ->label('Import')
                 ->schema([
                     FileUpload::make('file')->label('CSV CWICR')->required()->storeFiles(false)
-                        ->helperText('Actualiza name, unit y category. No borra el catálogo ni toca is_active o notes.'),
+                        ->helperText('Updates name, unit and category. Keeps the catalog, active status and notes.'),
                 ])
                 ->action(function (array $data): void {
                     $file = $data['file'] ?? null;
@@ -44,7 +44,7 @@ class ImportMaterials extends Page
 
                     $path = $file instanceof UploadedFile ? $file->getRealPath() : (is_string($file) ? $file : null);
                     if (! is_string($path) || ! is_file($path)) {
-                        Notification::make()->title('Selecciona un CSV.')->danger()->send();
+                        Notification::make()->title('Select a CSV file.')->danger()->send();
 
                         return;
                     }
@@ -58,7 +58,7 @@ class ImportMaterials extends Page
                     }
 
                     Notification::make()->title(sprintf(
-                        'Importados: %d · Actualizados: %d · Omitidos: %d',
+                        'Imported: %d · Updated: %d · Skipped: %d',
                         $result['inserted'],
                         $result['updated'],
                         $result['skipped'],

@@ -37,7 +37,7 @@ class MaterialResource extends Resource
 
     protected static ?string $modelLabel = 'material';
 
-    protected static ?string $pluralModelLabel = 'materiales';
+    protected static ?string $pluralModelLabel = 'materials';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -51,64 +51,64 @@ class MaterialResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('code')->label('Código')->required()->maxLength(255)
+            TextInput::make('code')->label('Code')->required()->maxLength(255)
                 ->unique(ignoreRecord: true)
                 ->disabledOn('edit')
                 ->dehydrated(fn (string $operation): bool => $operation === 'create')
-                ->helperText('En una edición el código CWICR no cambia.'),
-            TextInput::make('name')->label('Nombre')->required()->maxLength(255),
-            self::catalogChoice('unit', 'Unidad', 'materials.units', (int) config('materials.unit_max_length')),
-            self::catalogCustom('unit', 'Otra unidad', (int) config('materials.unit_max_length')),
-            self::catalogChoice('category', 'Categoría', 'materials.categories', 100),
-            self::catalogCustom('category', 'Otra categoría', 100),
-            Toggle::make('is_active')->label('Activo')->default(true),
-            Textarea::make('notes')->label('Notas')->maxLength(2000)->columnSpanFull()
-                ->helperText('Especificaciones propias. La importación CWICR no pisa este texto.'),
+                ->helperText('The CWICR code cannot be changed after creation.'),
+            TextInput::make('name')->label('Name')->required()->maxLength(255),
+            self::catalogChoice('unit', 'Unit', 'materials.units', (int) config('materials.unit_max_length')),
+            self::catalogCustom('unit', 'Other unit', (int) config('materials.unit_max_length')),
+            self::catalogChoice('category', 'Category', 'materials.categories', 100),
+            self::catalogCustom('category', 'Other category', 100),
+            Toggle::make('is_active')->label('Active')->default(true),
+            Textarea::make('notes')->label('Notes')->maxLength(2000)->columnSpanFull()
+                ->helperText('Custom specifications. CWICR imports preserve this text.'),
         ]);
     }
 
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            TextEntry::make('code')->label('Código'),
-            TextEntry::make('name')->label('Nombre'),
-            TextEntry::make('unit')->label('Unidad'),
-            TextEntry::make('category')->label('Categoría'),
-            TextEntry::make('is_active')->label('Activo')->badge()
-                ->formatStateUsing(fn (bool $state): string => $state ? 'Activo' : 'Inactivo')
+            TextEntry::make('code')->label('Code'),
+            TextEntry::make('name')->label('Name'),
+            TextEntry::make('unit')->label('Unit'),
+            TextEntry::make('category')->label('Category'),
+            TextEntry::make('is_active')->label('Active')->badge()
+                ->formatStateUsing(fn (bool $state): string => $state ? 'Active' : 'Inactive')
                 ->color(fn (bool $state): string => $state ? 'success' : 'gray'),
-            TextEntry::make('list_items_count')->label('Listas'),
-            TextEntry::make('notes')->label('Notas')->placeholder('—')->columnSpanFull(),
-            TextEntry::make('updated_at')->label('Actualizado')->dateTime('d/m/Y H:i', 'America/New_York'),
+            TextEntry::make('list_items_count')->label('Lists'),
+            TextEntry::make('notes')->label('Notes')->placeholder('—')->columnSpanFull(),
+            TextEntry::make('updated_at')->label('Updated')->dateTime('m/d/Y H:i', 'America/New_York'),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('code')->label('Código')->searchable()->sortable(),
-            TextColumn::make('name')->label('Nombre')->searchable()->sortable()->limit(48),
-            TextColumn::make('unit')->label('Unidad'),
-            TextColumn::make('category')->label('Categoría')->sortable(),
-            TextColumn::make('is_active')->label('Activo')->badge()
-                ->formatStateUsing(fn (bool $state): string => $state ? 'Activo' : 'Inactivo')
+            TextColumn::make('code')->label('Code')->searchable()->sortable(),
+            TextColumn::make('name')->label('Name')->searchable()->sortable()->limit(48),
+            TextColumn::make('unit')->label('Unit'),
+            TextColumn::make('category')->label('Category')->sortable(),
+            TextColumn::make('is_active')->label('Active')->badge()
+                ->formatStateUsing(fn (bool $state): string => $state ? 'Active' : 'Inactive')
                 ->color(fn (bool $state): string => $state ? 'success' : 'gray'),
-            TextColumn::make('list_items_count')->label('Listas')->sortable(),
-            TextColumn::make('updated_at')->label('Actualizado')->dateTime('d/m/Y H:i', 'America/New_York')->sortable(),
+            TextColumn::make('list_items_count')->label('Lists')->sortable(),
+            TextColumn::make('updated_at')->label('Updated')->dateTime('m/d/Y H:i', 'America/New_York')->sortable(),
         ])->filters([
-            SelectFilter::make('category')->label('Categoría')->options(fn (): array => self::choiceList(
+            SelectFilter::make('category')->label('Category')->options(fn (): array => self::choiceList(
                 array_merge(config('materials.categories'), Material::query()->distinct()->orderBy('category')->pluck('category')->all()),
             )),
-            TernaryFilter::make('is_active')->label('Activo'),
+            TernaryFilter::make('is_active')->label('Active'),
         ])->recordActions([
             ViewAction::make(),
             EditAction::make(),
             self::deleteAction(),
         ])->toolbarActions([
-            BulkAction::make('deactivate')->label('Desactivar')->color('warning')->requiresConfirmation()
+            BulkAction::make('deactivate')->label('Deactivate')->color('warning')->requiresConfirmation()
                 ->visible(fn (): bool => Auth::user()->can('create', Material::class))
                 ->action(fn (Collection $records) => self::setActive($records, false)),
-            BulkAction::make('activate')->label('Activar')->requiresConfirmation()
+            BulkAction::make('activate')->label('Activate')->requiresConfirmation()
                 ->visible(fn (): bool => Auth::user()->can('create', Material::class))
                 ->action(fn (Collection $records) => self::setActive($records, true)),
         ])->defaultSort('name');
@@ -151,7 +151,7 @@ class MaterialResource extends Resource
             ->action(function (Material $record): void {
                 if (! Auth::user()->can('delete', $record)) {
                     Notification::make()
-                        ->title('No se puede eliminar: una lista referencia este material. Desactívalo.')
+                        ->title('This material is used in a list. Deactivate it instead of deleting it.')
                         ->danger()
                         ->send();
 
@@ -159,14 +159,14 @@ class MaterialResource extends Resource
                 }
 
                 $record->delete();
-                Notification::make()->title('Material eliminado')->success()->send();
+                Notification::make()->title('Material deleted')->success()->send();
             });
     }
 
     private static function catalogChoice(string $field, string $label, string $configKey, int $max): Select
     {
         return Select::make($field.'_choice')->label($label)->required()->live()->searchable()
-            ->options(fn (): array => [...self::choiceList(config($configKey)), self::OTHER => 'Otra'])
+            ->options(fn (): array => [...self::choiceList(config($configKey)), self::OTHER => 'Other'])
             ->afterStateHydrated(function (Select $component, ?Material $record) use ($field, $configKey): void {
                 if ($record === null) {
                     return;
@@ -176,8 +176,8 @@ class MaterialResource extends Resource
                 $component->state(in_array($current, config($configKey), true) ? $current : self::OTHER);
             })
             ->helperText($field === 'category'
-                ? 'Las categorías CWICR se guardan tal cual. «Otra» abre un valor propio de hasta '.$max.' caracteres.'
-                : '«Otra» abre una unidad propia de hasta '.$max.' caracteres.');
+                ? 'CWICR categories are stored as supplied. Select “Other” to enter a custom value up to '.$max.' characters.'
+                : 'Select “Other” to enter a custom unit up to '.$max.' characters.');
     }
 
     private static function catalogCustom(string $field, string $label, int $max): TextInput

@@ -55,7 +55,7 @@ class SupervisorHoursController extends Controller
             // attendances.approved_by_supervisor_at does not exist. approved_at is a different column and is not wired here.
             'approval' => [
                 'available' => false,
-                'note' => 'La aprobación de horas se gestiona fuera del sistema en este bloque.',
+                'note' => 'Hours approval is handled outside the application.',
             ],
         ]);
     }

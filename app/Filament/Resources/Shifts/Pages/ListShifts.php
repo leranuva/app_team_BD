@@ -21,7 +21,7 @@ class ListShifts extends ListRecords
     {
         return [
             CreateAction::make(),
-            Action::make('assignMany')->label('Asignar a varios trabajadores')
+            Action::make('assignMany')->label('Assign multiple workers')
                 ->authorize('create', Shift::class)
                 ->schema(fn () => ShiftResource::fields(multiple: true))
                 ->databaseTransaction(false)
@@ -30,10 +30,10 @@ class ListShifts extends ListRecords
                     $names = User::workersVisibleTo(Auth::user())->whereKey(array_keys($result))->pluck('name', 'id');
                     $message = [];
                     foreach ($result as $id => $error) {
-                        $message[] = e($names[$id] ?? "Trabajador {$id}").' — '.e($error ?? 'Turno asignado');
+                        $message[] = e($names[$id] ?? "Worker {$id}").' — '.e($error ?? 'Shift assigned');
                     }
 
-                    Notification::make()->title('Resultado de la asignación')
+                    Notification::make()->title('Assignment results')
                         ->body(implode('<br>', $message))
                         ->status(array_filter($result) === [] ? 'success' : 'warning')
                         ->persistent()->send();

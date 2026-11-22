@@ -20,22 +20,22 @@ type ScopeSummary = {
 };
 
 const statusLabels: Record<string, string> = {
-    pending: 'Pendiente', active: 'Activo', in_progress: 'En progreso', completed: 'Completado',
+    pending: 'Pending', active: 'Active', in_progress: 'In progress', completed: 'Completed',
 };
 
 function formatWhen(value: string | null, zone: string): string {
-    if (!value) return 'Sin fecha';
+    if (!value) return 'No date';
     const date = DateTime.fromISO(value, { setZone: true }).setZone(zone);
-    return date.isValid ? date.setLocale('es').toLocaleString(DateTime.DATETIME_MED) : 'Sin fecha';
+    return date.isValid ? date.setLocale('en-US').toLocaleString(DateTime.DATETIME_MED) : 'No date';
 }
 
 export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = [] }: {
     scope: ScopeSummary; canCreate: boolean; canViewAll: boolean; timeZone: string; shifts?: ScopeShift[];
 }) {
     const tabs: { value: PhotoStatus; label: string }[] = [
-        { value: 'active', label: 'Activas' },
-        { value: 'archived', label: 'Archivadas' },
-        ...(canViewAll ? [{ value: 'all' as const, label: 'Todas' }] : []),
+        { value: 'active', label: 'Active' },
+        { value: 'archived', label: 'Archived' },
+        ...(canViewAll ? [{ value: 'all' as const, label: 'All' }] : []),
     ];
     const [section, setSection] = useState<'photos' | 'shifts' | 'detail'>('photos');
     const [status, setStatus] = useState<PhotoStatus>('active');
@@ -88,7 +88,7 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
     async function submitUpload(event: React.FormEvent) {
         event.preventDefault();
         if (!file) {
-            toast.error('Selecciona una foto.', toaster);
+            toast.error('Select a photo.', toaster);
             return;
         }
         setUploading(true);
@@ -99,7 +99,7 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
             toast.error(result.message, toaster);
             return;
         }
-        toast.success('Foto subida', toaster);
+        toast.success('Photo uploaded', toaster);
         chooseFile(null);
         setCaption('');
         setUploadOpen(false);
@@ -115,7 +115,7 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
             toast.error(result.message, toaster);
             return;
         }
-        toast.success('Foto archivada', toaster);
+        toast.success('Photo archived', toaster);
         setPhotos((current) => status === 'all'
             ? current.map((photo) => photo.id === result.photo.id ? result.photo : photo)
             : current.filter((photo) => photo.id !== result.photo.id));
@@ -132,7 +132,7 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
             toast.error(result.message, toaster);
             return;
         }
-        toast.success('Foto restaurada', toaster);
+        toast.success('Photo restored', toaster);
         setPhotos((current) => status === 'all'
             ? current.map((photo) => photo.id === result.photo.id ? result.photo : photo)
             : current.filter((photo) => photo.id !== result.photo.id));
@@ -142,7 +142,7 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
     return (
         <AppLayout>
             <Head title={scope.name} />
-            <Toaster id="photos" containerAriaLabel="Avisos de fotos" />
+            <Toaster id="photos" containerAriaLabel="Photo notifications" />
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
                 <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
                     <div>
@@ -154,42 +154,42 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
                             <span className="inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-800">{statusLabels[scope.status] ?? scope.status}</span>
                         </p>
                         {typeof scope.progress_percent === 'number' && (
-                            <div className="mt-3 h-2 w-48 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={scope.progress_percent} aria-label="Avance del alcance">
+                            <div className="mt-3 h-2 w-48 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={scope.progress_percent} aria-label="Scope progress">
                                 <div className="h-full bg-slate-950" style={{ width: `${scope.progress_percent}%` }} />
                             </div>
                         )}
-                        <p className="mt-2 text-sm text-slate-700">{scope.responsible?.name ?? 'Sin responsable'}</p>
-                        <p className="text-sm text-slate-600">{scope.start_date ?? 'Sin inicio'} – {scope.estimated_end_date ?? 'Sin fin'}</p>
+                        <p className="mt-2 text-sm text-slate-700">{scope.responsible?.name ?? 'Unassigned'}</p>
+                        <p className="text-sm text-slate-600">{scope.start_date ?? 'No start date'} – {scope.estimated_end_date ?? 'No end date'}</p>
                     </div>
-                    <a href={`/change-orders?job_scope_id=${scope.id}`} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold leading-[2.75rem] text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950">Órdenes de cambio</a>
-                    <a href={`/material-lists?job_scope_id=${scope.id}`} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold leading-[2.75rem] text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950">Materiales</a>
+                    <a href={`/change-orders?job_scope_id=${scope.id}`} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold leading-[2.75rem] text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950">Change orders</a>
+                    <a href={`/material-lists?job_scope_id=${scope.id}`} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold leading-[2.75rem] text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950">Materials</a>
                     {scope.can_edit && scope.edit_url && (
-                        <a href={scope.edit_url} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold leading-[2.75rem] text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950">Editar</a>
+                        <a href={scope.edit_url} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold leading-[2.75rem] text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950">Edit</a>
                     )}
                     {canCreate && (
                         <button type="button" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950" onClick={() => setUploadOpen(true)}>
-                            Añadir foto
+                            Add photo
                         </button>
                     )}
                 </header>
 
-                <div className="mb-4 flex gap-2" role="tablist" aria-label="Secciones del alcance">
-                    {([['photos', 'Fotos'], ['shifts', 'Turnos'], ['detail', 'Detalle']] as const).map(([value, label]) => (
+                <div className="mb-4 flex gap-2" role="tablist" aria-label="Scope sections">
+                    {([['photos', 'Photos'], ['shifts', 'Shifts'], ['detail', 'Details']] as const).map(([value, label]) => (
                         <button key={value} type="button" role="tab" aria-selected={section === value} className={`min-h-11 rounded-lg px-4 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950 ${section === value ? 'bg-slate-950 text-white' : 'bg-white text-slate-800'}`} onClick={() => setSection(value)}>
                             {label}
                         </button>
                     ))}
-                    <a role="tab" href={`/shifts/calendar?job_site_id=${scope.job_site?.id ?? ''}`} className="min-h-12 rounded-lg bg-white px-4 text-sm font-semibold leading-[3rem] text-slate-800">Calendario</a>
+                    <a role="tab" href={`/shifts/calendar?job_site_id=${scope.job_site?.id ?? ''}`} className="min-h-12 rounded-lg bg-white px-4 text-sm font-semibold leading-[3rem] text-slate-800">Calendar</a>
                     <a role="tab" href={`/change-orders?job_scope_id=${scope.id}`} className="min-h-12 rounded-lg bg-white px-4 text-sm font-semibold leading-[3rem] text-slate-800">Change Orders</a>
-                    <a role="tab" href={`/material-lists?job_scope_id=${scope.id}`} className="min-h-12 rounded-lg bg-white px-4 text-sm font-semibold leading-[3rem] text-slate-800">Materiales</a>
+                    <a role="tab" href={`/material-lists?job_scope_id=${scope.id}`} className="min-h-12 rounded-lg bg-white px-4 text-sm font-semibold leading-[3rem] text-slate-800">Materials</a>
                 </div>
                 {section === 'shifts' && (
-                    <section aria-label="Turnos">
-                        {shifts.length === 0 ? <p className="text-sm text-slate-600">No hay turnos en este alcance.</p> : (
+                    <section aria-label="Shifts">
+                        {shifts.length === 0 ? <p className="text-sm text-slate-600">There are no shifts for this scope.</p> : (
                             <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
                                 {shifts.map((shift) => (
                                     <li key={shift.id} className="px-4 py-3 text-sm text-slate-700">
-                                        <p className="font-semibold text-slate-950">{shift.worker ?? 'Sin trabajador'}</p>
+                                        <p className="font-semibold text-slate-950">{shift.worker ?? 'No worker assigned'}</p>
                                         <p>{formatWhen(shift.starts_at, timeZone)} · {shift.status}</p>
                                     </li>
                                 ))}
@@ -198,34 +198,34 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
                     </section>
                 )}
                 {section === 'detail' && (
-                    <section aria-label="Detalle" className="space-y-3 text-sm text-slate-700">
-                        <p><span className="font-semibold">Descripción. </span>{scope.description || 'Sin descripción'}</p>
-                        <p><span className="font-semibold">Notas. </span>{scope.notes || 'Sin notas'}</p>
+                    <section aria-label="Details" className="space-y-3 text-sm text-slate-700">
+                        <p><span className="font-semibold">Description. </span>{scope.description || 'No description'}</p>
+                        <p><span className="font-semibold">Notes. </span>{scope.notes || 'No notes'}</p>
                     </section>
                 )}
                 {section === 'photos' && (
                 <section aria-labelledby="progress-photos-heading">
-                    <h2 id="progress-photos-heading" className="text-lg font-semibold text-slate-950">Fotos de avance</h2>
-                    <div className="mt-3 flex gap-2" role="tablist" aria-label="Estado de las fotos">
+                    <h2 id="progress-photos-heading" className="text-lg font-semibold text-slate-950">Progress photos</h2>
+                    <div className="mt-3 flex gap-2" role="tablist" aria-label="Photo status">
                         {tabs.map((tab) => (
                             <button key={tab.value} type="button" role="tab" aria-selected={status === tab.value} className={`min-h-11 rounded-lg px-4 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950 ${status === tab.value ? 'bg-slate-950 text-white' : 'bg-white text-slate-800'}`} onClick={() => setStatus(tab.value)}>
                                 {tab.label}
                             </button>
                         ))}
                     </div>
-                    {loading ? <LoadingState label="Cargando fotos…" /> : null}
-                    {!loading && photos.length === 0 ? <p className="mt-4 text-sm text-slate-600">No hay fotos en esta pestaña.</p> : null}
+                    {loading ? <LoadingState label="Loading photos…" /> : null}
+                    {!loading && photos.length === 0 ? <p className="mt-4 text-sm text-slate-600">There are no photos in this tab.</p> : null}
                     <ul className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
                         {photos.map((photo) => (
                             <li key={photo.id}>
-                                <button type="button" className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950" aria-label={`Ver ${photo.caption || 'foto de avance'}`} onClick={() => { setSelected(photo); setReason(''); }}>
+                                <button type="button" className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950" aria-label={`View ${photo.caption || 'progress photo'}`} onClick={() => { setSelected(photo); setReason(''); }}>
                                     {photo.thumbnail_url ? (
                                         <img className="aspect-square w-full object-cover" src={photo.thumbnail_url} alt="" referrerPolicy="no-referrer" />
                                     ) : (
-                                        <span className="flex aspect-square items-center justify-center bg-slate-100 px-2 text-center text-xs text-slate-600">Foto archivada</span>
+                                        <span className="flex aspect-square items-center justify-center bg-slate-100 px-2 text-center text-xs text-slate-600">Photo archived</span>
                                     )}
                                     <span className={`mx-2 mb-2 mt-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${photo.archived_at ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800'}`}>
-                                        {photo.archived_at ? 'Archivada' : 'Activa'}
+                                        {photo.archived_at ? 'Archived' : 'Active'}
                                     </span>
                                 </button>
                             </li>
@@ -233,7 +233,7 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
                     </ul>
                     {page < lastPage && (
                         <button type="button" className="mt-4 min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950" onClick={loadMore}>
-                            Cargar más
+                            Load more
                         </button>
                     )}
                 </section>
@@ -246,34 +246,34 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
                     <DialogPanel className="mx-auto max-w-xl rounded-2xl bg-white p-5">
                         {selected && (
                             <>
-                                <DialogTitle className="text-lg font-semibold text-slate-950">{selected.caption || 'Foto de avance'}</DialogTitle>
+                                <DialogTitle className="text-lg font-semibold text-slate-950">{selected.caption || 'Progress photo'}</DialogTitle>
                                 {selected.url ? (
-                                    <img className="mt-4 max-h-96 w-full rounded-xl object-contain" src={selected.url} alt={selected.caption || 'Foto de avance'} referrerPolicy="no-referrer" />
+                                    <img className="mt-4 max-h-96 w-full rounded-xl object-contain" src={selected.url} alt={selected.caption || 'Progress photo'} referrerPolicy="no-referrer" />
                                 ) : (
-                                    <p className="mt-4 text-sm text-slate-600">Foto archivada. El enlace firmado no se emite hasta restaurarla.</p>
+                                    <p className="mt-4 text-sm text-slate-600">This photo is archived. Restore it to generate a signed link.</p>
                                 )}
                                 <dl className="mt-4 space-y-2 text-sm text-slate-700">
-                                    <div><dt className="font-semibold">Descripción</dt><dd>{selected.caption || 'Sin descripción'}</dd></div>
-                                    <div><dt className="font-semibold">Captura</dt><dd>{formatWhen(selected.taken_at, timeZone)}</dd></div>
-                                    <div><dt className="font-semibold">Subida por</dt><dd>{selected.uploaded_by?.name ?? 'Sin usuario'}</dd></div>
+                                    <div><dt className="font-semibold">Description</dt><dd>{selected.caption || 'No description'}</dd></div>
+                                    <div><dt className="font-semibold">Taken</dt><dd>{formatWhen(selected.taken_at, timeZone)}</dd></div>
+                                    <div><dt className="font-semibold">Uploaded by</dt><dd>{selected.uploaded_by?.name ?? 'Unknown user'}</dd></div>
                                 </dl>
                                 {selected.lat !== null && selected.lng !== null && (
                                     <a className="mt-3 inline-flex underline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.lat},${selected.lng}`)}`} target="_blank" rel="noopener noreferrer">
-                                        Ver ubicación en Google Maps
+                                        View location in Google Maps
                                     </a>
                                 )}
                                 <div className="mt-4 flex flex-wrap gap-2">
                                     {selected.can_archive && (
                                         <>
-                                            <label className="sr-only" htmlFor="archive-reason">Motivo de archivo</label>
-                                            <input id="archive-reason" className="min-h-11 flex-1 rounded-lg border-slate-300 px-3 text-sm" placeholder="Motivo de archivo" maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} />
-                                            <button type="button" className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold disabled:opacity-60" disabled={busy} onClick={archiveSelected}>Archivar</button>
+                                            <label className="sr-only" htmlFor="archive-reason">Archive reason</label>
+                                            <input id="archive-reason" className="min-h-11 flex-1 rounded-lg border-slate-300 px-3 text-sm" placeholder="Archive reason" maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} />
+                                            <button type="button" className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold disabled:opacity-60" disabled={busy} onClick={archiveSelected}>Archive</button>
                                         </>
                                     )}
                                     {selected.can_restore && (
-                                        <button type="button" className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold disabled:opacity-60" disabled={busy} onClick={restoreSelected}>Restaurar</button>
+                                        <button type="button" className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold disabled:opacity-60" disabled={busy} onClick={restoreSelected}>Restore</button>
                                     )}
-                                    <button type="button" className="min-h-11 rounded-lg px-4 text-sm font-semibold text-slate-700" onClick={() => setSelected(null)}>Cerrar</button>
+                                    <button type="button" className="min-h-11 rounded-lg px-4 text-sm font-semibold text-slate-700" onClick={() => setSelected(null)}>Close</button>
                                 </div>
                             </>
                         )}
@@ -285,24 +285,24 @@ export default function Show({ scope, canCreate, canViewAll, timeZone, shifts = 
                 <div className="fixed inset-0 bg-slate-950/50" aria-hidden="true" />
                 <div className="fixed inset-0 overflow-y-auto p-4">
                     <DialogPanel className="mx-auto max-w-lg rounded-2xl bg-white p-5">
-                        <DialogTitle className="text-lg font-semibold text-slate-950">Añadir foto</DialogTitle>
+                        <DialogTitle className="text-lg font-semibold text-slate-950">Add photo</DialogTitle>
                         <form className="mt-4 grid gap-4" onSubmit={submitUpload}>
                             <label className="grid gap-2 text-sm font-semibold text-slate-800">
-                                Imagen
+                                Image
                                 <input className="text-sm" type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => chooseFile(event.target.files?.[0] ?? null)} />
                             </label>
-                            {preview && <img className="max-h-48 rounded-xl object-contain" src={preview} alt="Vista previa de la foto seleccionada" />}
+                            {preview && <img className="max-h-48 rounded-xl object-contain" src={preview} alt="Selected photo preview" />}
                             <label className="grid gap-2 text-sm font-semibold text-slate-800">
-                                Descripción
+                                Description
                                 <textarea className="rounded-lg border-slate-300" maxLength={500} value={caption} disabled={uploading} onChange={(event) => setCaption(event.target.value)} />
                             </label>
                             {uploading && (
-                                <div className="h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-label="Progreso de subida">
+                                <div className="h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-label="Upload progress">
                                     <div className="h-full bg-slate-950 motion-reduce:transition-none" style={{ width: `${progress}%` }} />
                                 </div>
                             )}
                             <button type="submit" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={uploading}>
-                                Subir
+                                Upload
                             </button>
                         </form>
                     </DialogPanel>

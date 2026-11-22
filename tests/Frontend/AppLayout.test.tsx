@@ -29,9 +29,9 @@ afterEach(() => {
 describe('app layout', () => {
     it('shows the worker navigation', () => {
         (globalThis as { __role?: string }).__role = 'Carpintero';
-        render(<AppLayout><p>Inicio</p></AppLayout>);
-        expect(screen.getAllByRole('link', { name: 'Mis turnos' }).length).toBeGreaterThan(0);
-        expect(screen.getAllByRole('link', { name: 'Fichaje' }).length).toBeGreaterThan(0);
+        render(<AppLayout><p>Start</p></AppLayout>);
+        expect(screen.getAllByRole('link', { name: 'My shifts' }).length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('link', { name: 'Time clock' }).length).toBeGreaterThan(0);
         expect(screen.queryByRole('link', { name: 'Change Orders' })).toBeNull();
         expect(screen.getByText('Ana')).toBeTruthy();
         expect(screen.getAllByText('Carpintero').length).toBeGreaterThan(0);
@@ -39,23 +39,24 @@ describe('app layout', () => {
 
     it('shows supervisor modules and persists the active site', () => {
         (globalThis as { __role?: string }).__role = 'Supervisor';
-        render(<AppLayout><p>Inicio</p></AppLayout>);
-        expect(screen.getAllByRole('link', { name: 'Materiales' }).length).toBeGreaterThan(0);
-        expect(screen.getAllByRole('link', { name: 'Fotos' }).length).toBeGreaterThan(0);
-        fireEvent.change(screen.getByLabelText('Obra activa'), { target: { value: '4' } });
+        render(<AppLayout><p>Start</p></AppLayout>);
+        expect(screen.getAllByRole('link', { name: 'Materials' }).length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('link', { name: 'Photos' }).length).toBeGreaterThan(0);
+        fireEvent.change(screen.getByLabelText('Active job site'), { target: { value: '4' } });
         expect(readActiveSite()).toBe('4');
         expect(visit).toHaveBeenCalledWith(
             expect.stringContaining('job_site_id=4'),
             expect.objectContaining({ preserveState: false }),
         );
-        expect(screen.getAllByRole('link', { name: 'Materiales' })[0].getAttribute('href')).toBe('/material-lists?job_site_id=4');
-        expect(screen.getAllByRole('link', { name: 'Turnos' })[0].getAttribute('href')).toBe('/shifts/calendar?job_site_id=4');
+        expect(screen.getAllByRole('link', { name: 'Materials' })[0].getAttribute('href')).toBe('/material-lists?job_site_id=4');
+        expect(screen.getAllByRole('link', { name: 'Shifts' })[0].getAttribute('href')).toBe('/shifts/calendar?job_site_id=4');
     });
 
-    it('shows the catalog and Filament for an administrator', () => {
+    it('shows the catalog and administration for an administrator', () => {
         (globalThis as { __role?: string }).__role = 'Administrador';
-        render(<AppLayout><p>Inicio</p></AppLayout>);
-        expect(screen.getAllByRole('link', { name: 'Catálogo de materiales' })[0].getAttribute('href')).toBe('/admin/materials');
-        expect(screen.getAllByRole('link', { name: 'Filament' })[0].getAttribute('href')).toBe('/admin');
+        render(<AppLayout><p>Start</p></AppLayout>);
+        expect(screen.getAllByRole('link', { name: 'Material catalog' })[0].getAttribute('href')).toBe('/admin/materials');
+        expect(screen.getAllByRole('link', { name: 'Administration' })[0].getAttribute('href')).toBe('/admin');
+        expect(screen.getAllByRole('link', { name: 'Dashboard' })[0].getAttribute('aria-current')).toBe('page');
     });
 });

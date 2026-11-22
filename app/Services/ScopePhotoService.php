@@ -30,7 +30,7 @@ class ScopePhotoService
         Gate::forUser($uploader)->authorize('create', [ScopePhoto::class, $scope]);
 
         if (! $file->isValid()) {
-            throw ValidationException::withMessages(['file' => 'No se recibió una foto válida.']);
+            throw ValidationException::withMessages(['file' => 'No valid photo was received.']);
         }
 
         $data = Validator::make(['file' => $file] + $meta, [
@@ -40,13 +40,13 @@ class ScopePhotoService
             'lng' => ['nullable', 'required_with:lat', 'numeric', 'between:-180,180'],
             'taken_at' => ['nullable', 'date'],
         ], [
-            'file.max' => 'La foto no puede superar 10 MB.',
-            'file.image' => 'Sube una imagen JPEG, PNG o WebP.',
-            'file.mimetypes' => 'Sube una imagen JPEG, PNG o WebP.',
+            'file.max' => 'The photo must be 10 MB or smaller.',
+            'file.image' => 'Upload a JPEG, PNG or WebP image.',
+            'file.mimetypes' => 'Upload a JPEG, PNG or WebP image.',
         ])->validate();
 
         $mime = $file->getMimeType();
-        $extension = self::EXTENSIONS[$mime] ?? throw ValidationException::withMessages(['file' => 'El formato de la foto no es válido.']);
+        $extension = self::EXTENSIONS[$mime] ?? throw ValidationException::withMessages(['file' => 'The photo format is invalid.']);
         $takenAt = isset($data['taken_at'])
             ? CarbonImmutable::parse($data['taken_at'], config('app.business_timezone'))->utc()
             : ($this->exifTakenAt($file, $mime) ?? CarbonImmutable::now('UTC'));
@@ -57,7 +57,7 @@ class ScopePhotoService
 
         try {
             if ($disk->putFileAs(dirname($path), $file, basename($path), ['visibility' => 'private']) === false) {
-                throw new RuntimeException('No se pudo guardar la foto en S3.');
+                throw new RuntimeException('Could not save the photo to S3.');
             }
             $size = $disk->size($path);
 
@@ -69,7 +69,7 @@ class ScopePhotoService
                     'job_site_id' => $scope->job_site_id,
                     'uploaded_by' => $uploader->id,
                     'path' => $path,
-                    'original_name' => Str::limit($name !== '' ? $name : 'foto.'.$extension, 255, ''),
+                    'original_name' => Str::limit($name !== '' ? $name : 'photo.'.$extension, 255, ''),
                     'mime_type' => $mime,
                     'size_bytes' => $size,
                     'taken_at' => $takenAt,
@@ -122,7 +122,7 @@ class ScopePhotoService
                     Validator::make(['reason' => $reason], ['reason' => ['nullable', 'string', 'max:1000']])->validate();
                 }
                 if (! $archive && ! Storage::disk('s3')->exists($record->path)) {
-                    Log::warning('El archivo original ya no está disponible', [
+                    Log::warning('The original file is no longer available', [
                         'photo_id' => $record->id,
                         'path' => $record->path,
                     ]);

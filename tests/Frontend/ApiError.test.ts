@@ -10,15 +10,15 @@ function http(status: number, data: unknown = {}, headers: Record<string, string
 describe('api errors', () => {
     it('maps each status to a Spanish message', () => {
         vi.spyOn(axios, 'isAxiosError').mockReturnValue(true);
-        expect(apiErrorMessage(http(401))).toBe('Sesión expirada. Vuelve a iniciar sesión.');
-        expect(apiErrorMessage(http(403))).toBe('Sin permisos para esta acción.');
-        expect(apiErrorMessage(http(404))).toBe('El recurso ya no existe.');
+        expect(apiErrorMessage(http(401))).toBe('Your session expired. Sign in again.');
+        expect(apiErrorMessage(http(403))).toBe('You do not have permission to perform this action.');
+        expect(apiErrorMessage(http(404))).toBe('This item no longer exists.');
         expect(apiErrorMessage(http(409, { message: 'Otro usuario la cambió.' }))).toBe('Otro usuario la cambió.');
         expect(apiErrorMessage(http(422, { errors: { title: ['El título es obligatorio.'] } }))).toBe('El título es obligatorio.');
-        expect(apiErrorMessage(http(429))).toBe('Demasiadas solicitudes. Espera un momento.');
+        expect(apiErrorMessage(http(429))).toBe('Too many requests. Try again shortly.');
         expect(retryAfterSeconds(http(429, {}, { 'retry-after': '12' }))).toBe(12);
-        expect(apiErrorMessage(http(500))).toBe('Error del servidor. Intenta de nuevo.');
-        expect(apiErrorMessage(new Error('offline'))).toBe('Error de conexión.');
+        expect(apiErrorMessage(http(500))).toBe('Server error. Try again.');
+        expect(apiErrorMessage(new Error('offline'))).toBe('Connection error.');
     });
 
     it('redirects to login and keeps the return path on 401', async () => {

@@ -62,7 +62,7 @@ it('skips a unit longer than 20 characters instead of truncating it', function (
     $summary = null;
     Log::listen(function ($message) use (&$warned, &$summary): void {
         $warned = $warned || ($message->level === 'warning' && ($message->context['field'] ?? null) === 'unit');
-        if ($message->level === 'warning' && str_contains($message->message, 'omitida por longitud')) {
+        if ($message->level === 'warning' && str_contains($message->message, 'skipped for exceeding the length limit')) {
             $summary = $message->context;
         }
     });
@@ -119,7 +119,7 @@ it('rejects a header without unit and a missing file', function (): void {
     $path = writeCatalog("code,name,category\nMAT-1,Arena,Aggregates & Earth\n");
 
     expect(fn () => app(MaterialImportService::class)->import($path))
-        ->toThrow(InvalidArgumentException::class, 'Columnas encontradas: code, name, category');
+        ->toThrow(InvalidArgumentException::class, 'Columns found: code, name, category');
 
     expect(fn () => app(MaterialImportService::class)->import(storage_path('app/no-existe-cwicr.csv')))
         ->toThrow(InvalidArgumentException::class, MaterialImportService::DOWNLOAD_URL);

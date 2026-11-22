@@ -10,7 +10,7 @@ uses(TestCase::class, RefreshDatabase::class);
 it('imports the nyc sheetrock catalog as the drywall category', function (): void {
     $this->artisan('materials:import-sheetrock')
         ->assertSuccessful()
-        ->expectsOutputToContain('[OK] Importados: 35 · Actualizados: 0 · Omitidos: 0 · Total: 35');
+        ->expectsOutputToContain('[OK] Imported: 35 · Updated: 0 · Skipped: 0 · Total: 35');
 
     $panel = Material::query()->where('code', 'SR-FIR-001')->first();
 
@@ -28,7 +28,7 @@ it('updates an existing sheetrock code without writing an activity row', functio
 
     $this->artisan('materials:import-sheetrock')
         ->assertSuccessful()
-        ->expectsOutputToContain('Actualizados: 1');
+        ->expectsOutputToContain('Updated: 1');
 
     expect(Material::query()->where('code', 'SR-STD-001')->value('category'))->toBe('Drywall')
         ->and(Activity::query()->where('log_name', 'materials')->count())->toBe(0);

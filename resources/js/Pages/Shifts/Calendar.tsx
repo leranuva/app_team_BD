@@ -7,7 +7,6 @@ import timeGrid from '@fullcalendar/timegrid';
 import list from '@fullcalendar/list';
 import interaction, { type EventResizeDoneArg } from '@fullcalendar/interaction';
 import luxon from '@fullcalendar/luxon3';
-import es from '@fullcalendar/core/locales/es';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 import ShiftDetailModal from '@/Components/Shifts/ShiftDetailModal';
@@ -27,7 +26,7 @@ type Options = {
     can_edit: boolean;
 };
 
-function readFilters(sites: Option[], options: Options): Filters {
+function readFilters(sites: Option[], options: Options, canEdit: boolean): Filters {
     const params = new URLSearchParams(window.location.search);
 
     function selectValue(key: keyof Filters, valid: Option[]) {
@@ -39,7 +38,7 @@ function readFilters(sites: Option[], options: Options): Filters {
 
     return {
         job_site_id: selectValue('job_site_id', sites) || (sites.some((site) => site.value === stored) ? stored : ''),
-        role_required: selectValue('role_required', options.roles),
+        role_required: canEdit ? selectValue('role_required', options.roles) : '',
         status: selectValue('status', options.statuses),
         worker_id: /^[1-9]\d*$/.test(params.get('worker_id') ?? '') ? params.get('worker_id')! : '',
     };
@@ -71,11 +70,11 @@ export function calendarInitialView(desktop: boolean): 'timeGridWeek' | 'listWee
     return desktop ? 'timeGridWeek' : 'listWeek';
 }
 
-export default function Calendar({ options, canEdit, timeZone, title = 'Calendario de turnos' }: {
+export default function Calendar({ options, canEdit, timeZone, title = 'Shift calendar' }: {
     options: Options; canEdit: boolean; timeZone: string; title?: string;
 }) {
     const sites = options.job_sites.map(({ id, name }) => ({ value: String(id), label: name }));
-    const [filters, setFilters] = useState(() => readFilters(sites, options));
+    const [filters, setFilters] = useState(() => readFilters(sites, options, canEdit));
     const [touch] = useState(() => window.matchMedia('(pointer: coarse)').matches);
     const [initialView] = useState(() => calendarInitialView(window.matchMedia('(min-width: 768px)').matches));
     const [selected, setSelected] = useState<ShiftEvent | null>(null);
@@ -128,7 +127,7 @@ export default function Calendar({ options, canEdit, timeZone, title = 'Calendar
                 toast.error(result.message, {
                     toasterId,
                     action: result.retryable && toasterId === 'shifts'
-                        ? { label: 'Reintentar', onClick: () => { void save(event, start, end, undefined, toasterId); } }
+                        ? { label: 'Try again', onClick: () => { void save(event, start, end, undefined, toasterId); } }
                         : undefined,
                 });
                 revert?.();
@@ -159,7 +158,7 @@ export default function Calendar({ options, canEdit, timeZone, title = 'Calendar
             }
             return result.kind === 'saved';
         } catch {
-            toast.error('No se pudo guardar el turno. Inténtalo de nuevo.', { toasterId });
+            toast.error('Could not save the shift. Try again.', { toasterId });
             revert?.();
             return false;
         } finally {
@@ -199,33 +198,33 @@ export default function Calendar({ options, canEdit, timeZone, title = 'Calendar
     return (
         <AppLayout>
             <Head title={title} />
-            <Toaster id="shifts" containerAriaLabel="Avisos del calendario" />
+            <Toaster id="shifts" containerAriaLabel="Calendar notifications" />
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
                 <h1 className="mb-6 text-3xl font-semibold tracking-tight text-slate-950">{title}</h1>
-                <section aria-label="Filtros de turnos" className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-3">
-                    <FilterSelect label="Obra" defaultLabel="Todas las obras" options={sites}
+                <section aria-label="Shift filters" className={`grid gap-4 rounded-xl border border-slate-200 bg-white p-5 ${canEdit ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+                    <FilterSelect label="Job site" defaultLabel="All job sites" options={sites}
                         value={filters.job_site_id} onChange={(value) => changeFilter('job_site_id', value)} />
-                    <FilterSelect label="Rol" defaultLabel="Todos los roles" options={options.roles}
-                        value={filters.role_required} onChange={(value) => changeFilter('role_required', value)} />
-                    <FilterSelect label="Estado" defaultLabel="Todos los estados" options={options.statuses}
+                    {canEdit && <FilterSelect label="Role" defaultLabel="All roles" options={options.roles}
+                        value={filters.role_required} onChange={(value) => changeFilter('role_required', value)} />}
+                    <FilterSelect label="Status" defaultLabel="All statuses" options={options.statuses}
                         value={filters.status} onChange={(value) => changeFilter('status', value)} />
                 </section>
-                <section aria-label="Turnos programados" className="mt-5 rounded-xl border border-slate-200 bg-white p-3 sm:p-5">
-                    {loading ? <LoadingState label="Cargando turnos…" /> : null}
+                <section aria-label="Scheduled shifts" className="mt-5 rounded-xl border border-slate-200 bg-white p-3 sm:p-5">
+                    {loading ? <LoadingState label="Loading shifts…" /> : null}
                     {failure && (
                         <div role="alert" className="my-3 flex flex-wrap items-center gap-3 rounded-lg bg-amber-50 p-3 text-sm text-slate-900">
                             <span>{failure.message}</span>
                             {failure.forbidden
-                                ? <a href="/dashboard" className="font-semibold underline">Volver a operaciones</a>
+                                ? <a href="/dashboard" className="font-semibold underline">Back to operations</a>
                                 : <button type="button" disabled={retryLocked}
                                     onClick={refetch}
-                                    className="min-h-9 rounded border border-slate-500 px-3 font-semibold disabled:opacity-50">Reintentar</button>}
+                                    className="min-h-9 rounded border border-slate-500 px-3 font-semibold disabled:opacity-50">Try again</button>}
                         </div>
                     )}
                     <div hidden={failure?.forbidden} className="shift-calendar">
-                        <FullCalendar ref={calendar} plugins={plugins} initialView={initialView} locale={es} timeZone={timeZone}
+                        <FullCalendar ref={calendar} plugins={plugins} initialView={initialView} locale="en" timeZone={timeZone}
                             headerToolbar={{ start: 'prev,next today', center: 'title', end: 'dayGridMonth,timeGridWeek,listWeek' }}
-                            buttonHints={{ prev: 'Rango anterior', next: 'Rango siguiente', today: 'Ir a hoy', dayGridMonth: 'Vista mensual', timeGridWeek: 'Vista semanal', listWeek: 'Vista de lista' }}
+                            buttonHints={{ prev: 'Previous date range', next: 'Next date range', today: 'Go to today', dayGridMonth: 'Month view', timeGridWeek: 'Week view', listWeek: 'List view' }}
                             height="auto" allDaySlot={false} nowIndicator dayMaxEvents weekNumbers firstDay={1}
                             events={source} lazyFetching={false} eventInteractive eventDidMount={decorateEvent}
                             editable={canEdit && !touch} eventResizableFromStart={canEdit && !touch}

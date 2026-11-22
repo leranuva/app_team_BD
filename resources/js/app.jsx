@@ -5,7 +5,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Blue Draft';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -14,7 +14,7 @@ createInertiaApp({
         const jsx = `./Pages/${name}.jsx`;
         const tsx = `./Pages/${name}.tsx`;
         if (pages[jsx] && pages[tsx]) {
-            throw new Error(`Página duplicada: ${name}. Deja solo ${name}.tsx.`);
+            throw new Error(`Duplicate page: ${name}. Keep only ${name}.tsx.`);
         }
         return resolvePageComponent([jsx, tsx], pages);
     },

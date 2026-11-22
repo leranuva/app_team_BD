@@ -246,7 +246,11 @@ En el dashboard, «Mis obras» lista las obras del supervisor con alcances y fot
 
 ### Asistencias y horas
 
-`AttendanceService` abre y cierra asistencias del propio trabajador. Usa la hora del servidor en UTC y puede rechazar muestras GPS vencidas. Valida el radio de la obra y marca para revisión los fichajes dentro del radio con precisión superior a 100 m. Las ventanas de entrada y salida, de 30 minutos respecto del horario previsto, se ajustan en `config/attendance.php`; se pueden desactivar por separado con `null`. La base permite una asistencia por turno y una entrada abierta por trabajador. La bitácora identifica al actor y registra horarios, indicadores y totales de minutos.
+`AttendanceService` records the worker’s clock-in and clock-out using the server time in UTC. Each punch validates the job site’s geofence and the age of the GPS sample. Accuracy over 100 m is flagged for review. The default clock-in window is 30 minutes before or after the scheduled start. Clock-out can record an early or late departure. Both windows are configurable in `config/attendance.php`. Each shift has its own attendance record, and a worker can have only one open entry at a time.
+
+For a scheduled transfer, assign a separate shift at each job site. The worker clocks out at the first site and clocks in on arrival at the second site. **Today** shows the scheduled shifts and the recorded times for each site. **Today’s team** shows each shift to authorized supervisors. Reports attribute worked time to the corresponding site and exclude the time between punches.
+
+After clocking out, operational workers can select **Resume work** to re-enter the same job site or start at another assigned job site that day. If a scheduled shift at the selected site is open for clock-in, the punch uses it. Otherwise, the application records a separate unscheduled work period. Each new entry checks the selected site’s geofence.
 
 `AttendanceCalculatorService` separa períodos al cruzar medianoche o el comienzo de semana en Nueva York, mide el tiempo real en UTC y suma las horas del trabajador en todas sus obras. La configuración inicial usa semana desde el lunes, 40 horas semanales, un umbral diario interno de 8 horas, overtime a 1,5× y doble tiempo desactivado. Cada minuto se asigna a una sola categoría. `estimateGrossPay()` estima el importe bruto con una tarifa suministrada.
 

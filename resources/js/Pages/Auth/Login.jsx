@@ -23,8 +23,8 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <GuestLayout>
-            <Head title="Iniciar sesión" />
-            <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-950">Iniciar sesión</h1>
+            <Head title="Sign in" />
+            <h1 className="mb-7 text-3xl font-bold tracking-tight text-slate-950">Sign in</h1>
 
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600">
@@ -34,7 +34,7 @@ export default function Login({ status, canResetPassword }) {
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="email" value="Correo electrónico" />
+                    <InputLabel htmlFor="email" value="Email address" />
 
                     <TextInput
                         id="email"
@@ -51,7 +51,7 @@ export default function Login({ status, canResetPassword }) {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Contraseña" />
+                    <InputLabel htmlFor="password" value="Password" />
 
                     <TextInput
                         id="password"
@@ -76,24 +76,23 @@ export default function Login({ status, canResetPassword }) {
                             }
                         />
                         <span className="ms-2 text-sm text-gray-600">
-                            Recordarme
+                            Remember me
                         </span>
                     </label>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
+                <div className="mt-6 flex flex-col gap-4">
+                    <PrimaryButton className="w-full justify-center" disabled={processing}>
+                        Sign in
+                    </PrimaryButton>
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            className="self-center rounded-md text-sm font-semibold text-blue-900 underline underline-offset-4"
                         >
-                            ¿Olvidaste tu contraseña?
+                            Forgot your password?
                         </Link>
                     )}
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Entrar
-                    </PrimaryButton>
                 </div>
             </form>
         </GuestLayout>

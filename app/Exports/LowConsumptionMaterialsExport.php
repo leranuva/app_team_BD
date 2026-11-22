@@ -27,7 +27,7 @@ class LowConsumptionMaterialsExport implements FromQuery, ShouldAutoSize, WithHe
 
     public function headings(): array
     {
-        return ['Material', 'Unidad', 'Obra', 'Scope', 'Entregado', 'Consumido', '% Consumo', 'Última actualización'];
+        return ['Material', 'Unit', 'Job site', 'Scope', 'Delivered', 'Used', '% used', 'Last updated'];
     }
 
     /**

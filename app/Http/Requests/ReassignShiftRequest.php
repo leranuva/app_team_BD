@@ -53,7 +53,7 @@ class ReassignShiftRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['expected_updated_at.required' => 'Debes enviar la versión del turno para evitar sobreescrituras'];
+        return ['expected_updated_at.required' => 'Include the shift version to avoid overwriting changes'];
     }
 
     public function after(): array
@@ -61,7 +61,7 @@ class ReassignShiftRequest extends FormRequest
         return [function (Validator $validator): void {
             foreach (['start_at', 'end_at', 'expected_updated_at'] as $field) {
                 if (! isset($this->instants[$field]) && ! $validator->errors()->has($field)) {
-                    $validator->errors()->add($field, 'Envía una fecha ISO 8601 válida con offset.');
+                    $validator->errors()->add($field, 'Enter a valid ISO 8601 date and time with a UTC offset.');
                 }
             }
         }];

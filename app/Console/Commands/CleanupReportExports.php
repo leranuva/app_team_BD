@@ -23,7 +23,7 @@ class CleanupReportExports extends Command
             $removed++;
         });
 
-        $this->info('Reportes eliminados: '.$removed);
+        $this->info('Reports deleted: '.$removed);
 
         return self::SUCCESS;
     }

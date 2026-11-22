@@ -10,10 +10,15 @@ enum ShiftRole: string
 
     public function label(): string
     {
+        return $this->logisticsRole()->label();
+    }
+
+    public function logisticsRole(): LogisticsRole
+    {
         return match ($this) {
-            self::Supervisor => LogisticsRole::Supervisor->value,
-            self::Carpenter => LogisticsRole::Carpenter->value,
-            self::Helper => LogisticsRole::Helper->value,
+            self::Supervisor => LogisticsRole::Supervisor,
+            self::Carpenter => LogisticsRole::Carpenter,
+            self::Helper => LogisticsRole::Helper,
         };
     }
 }

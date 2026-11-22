@@ -75,7 +75,7 @@ it('reports partial bulk success and audits cancellation with its reason', funct
     $other->jobSites()->attach($this->site);
 
     $results = $this->service->assignMany($this->admin, $this->data, [$this->worker->id, $other->id]);
-    expect($results[$this->worker->id])->toContain('solapa')->and($results[$other->id])->toBeNull();
+    expect($results[$this->worker->id])->toContain('overlapping shift')->and($results[$other->id])->toBeNull();
 
     $available = User::factory()->create()->assignRole(LogisticsRole::Carpenter->value);
     $available->jobSites()->attach($this->site);

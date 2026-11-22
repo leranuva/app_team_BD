@@ -31,20 +31,20 @@ export async function reassignShift(event: ShiftEvent, start: string, end: strin
         const response = await axios.patch('/api/shifts/' + event.id + '/reassign', {
             start_at: start, end_at: end, expected_updated_at: event.updated_at,
         }, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
-        return { event: response.data.data as ShiftEvent, message: 'Turno reasignado', kind: 'saved' } as const;
+        return { event: response.data.data as ShiftEvent, message: 'Shift rescheduled', kind: 'saved' } as const;
     } catch (error) {
         if (!axios.isAxiosError(error)) throw error;
         const status = error.response?.status;
         const data = error.response?.data;
         if (status === 409 && data?.current) {
-            return { event: data.current as ShiftEvent, message: 'Otro usuario modificó el turno; se actualizó la vista.', kind: 'conflict' } as const;
+            return { event: data.current as ShiftEvent, message: 'Another user changed this shift. The calendar is now up to date.', kind: 'conflict' } as const;
         }
         const validation = data?.errors as Record<string, string[]> | undefined;
         const message = status === 422
-            ? validation?.start_at?.[0] ?? validation?.end_at?.[0] ?? Object.values(validation ?? {})[0]?.[0] ?? 'Revisa el horario.'
-            : status === 403 ? 'Sin permisos para reasignar este turno.'
-            : status === 429 ? 'Demasiadas operaciones, espera un momento.'
-            : 'No se pudo guardar el turno. Inténtalo de nuevo.';
+            ? validation?.start_at?.[0] ?? validation?.end_at?.[0] ?? Object.values(validation ?? {})[0]?.[0] ?? 'Check the shift times.'
+            : status === 403 ? 'You do not have permission to reschedule this shift.'
+            : status === 429 ? 'Too many requests. Try again shortly.'
+            : 'Could not save the shift. Try again.';
         return { kind: 'failed', message, retryable: status === undefined || status >= 500 } as const;
     }
 }

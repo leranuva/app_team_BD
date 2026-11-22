@@ -19,8 +19,8 @@ class MaterialImportService
     private array $overlongCodes = [];
 
     /**
-     * Columnas de precio, moneda, uso y región del CSV se ignoran.
-     * Un code repetido en el mismo archivo se aplica en orden: la última fila gana.
+     * The CSV price, currency, usage and region columns are ignored.
+     * Duplicate codes are applied in file order, so the last row wins.
      *
      * @return array{inserted: int, updated: int, skipped: int, total: int}
      */
@@ -65,13 +65,13 @@ class MaterialImportService
             $overlong = count($this->overlongCodes);
             if ($overlong > 0) {
                 Log::warning(
-                    $overlong === 1 ? '1 fila omitida por longitud' : $overlong.' filas omitidas por longitud',
+                    $overlong === 1 ? '1 row skipped for exceeding the length limit' : $overlong.' rows skipped for exceeding the length limit',
                     ['codes' => $this->overlongCodes],
                 );
             }
 
             $counts['total'] = $counts['inserted'] + $counts['updated'] + $counts['skipped'];
-            Log::info('Importación de catálogo CWICR', $counts + ['dry_run' => $dryRun, 'truncate' => $truncate]);
+            Log::info('CWICR catalog import', $counts + ['dry_run' => $dryRun, 'truncate' => $truncate]);
 
             return $counts;
         };
@@ -107,7 +107,7 @@ class MaterialImportService
                 }
 
                 $now = now();
-                // La fila anterior del mismo code ya se insertó o ya estaba en la tabla. Esta la pisa.
+                // Overwrite the earlier row for the same code.
                 if (isset($known[$prepared['code']])) {
                     if (! $dryRun) {
                         Material::query()->where('code', $prepared['code'])->update([
@@ -175,7 +175,7 @@ class MaterialImportService
         foreach ($limits as $field => $limit) {
             if ($values[$field] !== '' && mb_strlen($values[$field]) > $limit) {
                 $tooLong = true;
-                Log::warning('Fila de catálogo omitida por superar el límite de columna', [
+                Log::warning('Catalog row skipped for exceeding the column length limit', [
                     'row' => $rowNumber,
                     'code' => $code,
                     'field' => $field,
@@ -201,8 +201,8 @@ class MaterialImportService
     {
         if (! is_file($filePath)) {
             throw new InvalidArgumentException(
-                'No se encontró el CSV en '.$filePath.'. Descárgalo desde '.self::DOWNLOAD_URL
-                .' y colócalo en database/data/cwicr_materials.csv.'
+                'CSV file not found at '.$filePath.'. Download it from '.self::DOWNLOAD_URL
+                .' and save it to database/data/cwicr_materials.csv.'
             );
         }
 
@@ -211,13 +211,13 @@ class MaterialImportService
             $csv->setHeaderOffset(0);
             $header = array_map(trim(...), $csv->getHeader());
         } catch (Exception $exception) {
-            throw new InvalidArgumentException('El CSV no tiene una cabecera legible.', previous: $exception);
+            throw new InvalidArgumentException('The CSV header could not be read.', previous: $exception);
         }
 
         $missing = array_diff(['code', 'name', 'category', 'unit'], $header);
         if ($missing !== []) {
             throw new InvalidArgumentException(
-                'El CSV debe incluir code, name, category y unit. Columnas encontradas: '.implode(', ', $header).'.'
+                'The CSV must include code, name, category and unit. Columns found: '.implode(', ', $header).'.'
             );
         }
 

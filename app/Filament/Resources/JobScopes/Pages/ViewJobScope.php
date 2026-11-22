@@ -14,7 +14,7 @@ class ViewJobScope extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('gallery')->label('Ver fotos')
+            Action::make('gallery')->label('View photos')
                 ->url(fn (): string => route('job-scopes.show', $this->getRecord())),
         ];
     }

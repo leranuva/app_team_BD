@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Workers;
 
 use App\Actions\ManageWorker;
+use App\Enums\LogisticsRole;
 use App\Filament\Resources\Workers\Pages\CreateWorker;
 use App\Filament\Resources\Workers\Pages\EditWorker;
 use App\Filament\Resources\Workers\Pages\ListWorkers;
@@ -36,9 +37,9 @@ class WorkerResource extends Resource
 
     protected static ?string $slug = 'workers';
 
-    protected static ?string $modelLabel = 'trabajador';
+    protected static ?string $modelLabel = 'worker';
 
-    protected static ?string $pluralModelLabel = 'trabajadores';
+    protected static ?string $pluralModelLabel = 'workers';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-identification';
 
@@ -50,31 +51,31 @@ class WorkerResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Contacto')->columns(2)->columnSpanFull()
+            Section::make('Contact')->columns(2)->columnSpanFull()
                 ->visible(fn (?User $record): bool => $record
                     ? Gate::allows('updateContactInfo', $record)
                     : Gate::allows('create', User::class))
                 ->schema([
-                    TextInput::make('phone')->label('Teléfono')->tel()->maxLength(40),
-                    Textarea::make('address')->label('Dirección')->maxLength(500)->columnSpanFull(),
-                    TextInput::make('emergency_contact.name')->label('Contacto de emergencia')->maxLength(255),
-                    TextInput::make('emergency_contact.phone')->label('Teléfono de emergencia')->tel()->maxLength(40),
+                    TextInput::make('phone')->label('Phone')->tel()->maxLength(40),
+                    Textarea::make('address')->label('Address')->maxLength(500)->columnSpanFull(),
+                    TextInput::make('emergency_contact.name')->label('Emergency contact')->maxLength(255),
+                    TextInput::make('emergency_contact.phone')->label('Emergency phone')->tel()->maxLength(40),
                 ]),
-            Section::make('Cuenta y asignación')->columns(2)->columnSpanFull()
+            Section::make('Account and assignment')->columns(2)->columnSpanFull()
                 ->visible(fn (?User $record): bool => $record ? Gate::allows('manageWorkerProfile', $record) : Gate::allows('create', User::class))
                 ->schema([
-                    TextInput::make('name')->label('Nombre completo')->required()->maxLength(255),
-                    TextInput::make('email')->label('Correo electrónico')->required()->email()->maxLength(255),
-                    TextInput::make('password')->label('Contraseña inicial')->password()->required()
+                    TextInput::make('name')->label('Full name')->required()->maxLength(255),
+                    TextInput::make('email')->label('Email address')->required()->email()->maxLength(255),
+                    TextInput::make('password')->label('Initial password')->password()->required()
                         ->minLength(12)->maxLength(72)->visibleOn('create'),
-                    Select::make('role_id')->label('Rol')->options(fn () => self::roles())->required(),
-                    Select::make('primary_job_site_id')->label('Obra principal')->searchable()
+                    Select::make('role_id')->label('Role')->options(fn () => self::roles())->required(),
+                    Select::make('primary_job_site_id')->label('Primary job site')->searchable()
                         ->getSearchResultsUsing(fn (string $search) => JobSite::whereLike('name', '%'.$search.'%')->orderBy('name')->limit(30)->pluck('name', 'id')->all())
                         ->getOptionLabelUsing(fn ($value) => JobSite::find($value)?->name),
-                    TextInput::make('hourly_rate')->label('Tarifa por hora (USD)')->numeric()->minValue(0)->maxValue(99999999.99)->step(0.01),
-                    TextInput::make('insurance_reference')->label('Número de seguro o identificación')->maxLength(255),
-                    self::documents('identity_documents', 'Documentos de identidad', 'identity'),
-                    self::documents('osha_documents', 'Certificaciones OSHA', 'osha'),
+                    TextInput::make('hourly_rate')->label('Hourly rate (USD)')->numeric()->minValue(0)->maxValue(99999999.99)->step(0.01),
+                    TextInput::make('insurance_reference')->label('Insurance or ID number')->maxLength(255),
+                    self::documents('identity_documents', 'Identity documents', 'identity'),
+                    self::documents('osha_documents', 'OSHA certifications', 'osha'),
                 ]),
         ]);
     }
@@ -82,17 +83,17 @@ class WorkerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('name')->label('Nombre')->searchable()->sortable(),
-            TextColumn::make('email')->label('Correo')->searchable(),
-            TextColumn::make('roles.name')->label('Rol')->badge(),
-            TextColumn::make('primaryJobSite.name')->label('Obra principal'),
-            IconColumn::make('is_active')->label('Activo')->boolean(),
+            TextColumn::make('name')->label('Name')->searchable()->sortable(),
+            TextColumn::make('email')->label('Email')->searchable(),
+            TextColumn::make('roles.name')->label('Role')->badge()->formatStateUsing(fn (string $state): string => LogisticsRole::displayName($state)),
+            TextColumn::make('primaryJobSite.name')->label('Primary job site'),
+            IconColumn::make('is_active')->label('Active')->boolean(),
         ])->filters([
-            SelectFilter::make('role')->label('Rol')->options(fn () => self::roles())
+            SelectFilter::make('role')->label('Role')->options(fn () => self::roles())
                 ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn (Builder $workers, $role) => $workers->whereHas('roles', fn (Builder $roles) => $roles->whereKey($role)))),
-            SelectFilter::make('primary_job_site_id')->label('Obra principal')
+            SelectFilter::make('primary_job_site_id')->label('Primary job site')
                 ->relationship('primaryJobSite', 'name')->searchable(),
-            TernaryFilter::make('is_active')->label('Estado')->trueLabel('Activos')->falseLabel('Inactivos'),
+            TernaryFilter::make('is_active')->label('Status')->trueLabel('Active')->falseLabel('Inactive'),
         ])->recordActions([
             EditAction::make(),
             self::changeStatus(true),
@@ -111,7 +112,8 @@ class WorkerResource extends Resource
 
     private static function roles(): array
     {
-        return Role::where('guard_name', 'web')->whereIn('name', User::operationalRoles())->orderBy('name')->pluck('name', 'id')->all();
+        return Role::where('guard_name', 'web')->whereIn('name', User::operationalRoles())
+            ->pluck('name', 'id')->map(LogisticsRole::displayName(...))->sort()->all();
     }
 
     private static function documents(string $field, string $label, string $kind): FileUpload
@@ -142,7 +144,7 @@ class WorkerResource extends Resource
 
     private static function changeStatus(bool $active): Action
     {
-        return Action::make($active ? 'activate' : 'deactivate')->label($active ? 'Activar' : 'Desactivar')
+        return Action::make($active ? 'activate' : 'deactivate')->label($active ? 'Activate' : 'Deactivate')
             ->requiresConfirmation()
             ->visible(fn (User $record): bool => $record->is_active !== $active)
             ->authorize('manageWorkerProfile')

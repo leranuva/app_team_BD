@@ -25,15 +25,15 @@ describe('worker history', () => {
     it('renders attendance rows without images', () => {
         const { container } = render(<History timeZone="America/New_York" attendances={{ data: [row], current_page: 1, last_page: 2 }} />);
         expect(screen.getByText('Queens')).toBeTruthy();
-        expect(screen.getByText('Duración: 540 min')).toBeTruthy();
-        expect(screen.getByText('Horas extra: 60 min')).toBeTruthy();
+        expect(screen.getByText('Duration: 540 min')).toBeTruthy();
+        expect(screen.getByText('Overtime: 60 min')).toBeTruthy();
         expect(container.querySelector('img')).toBeNull();
     });
 
     it('asks for the next page', () => {
         render(<History timeZone="America/New_York" attendances={{ data: [row], current_page: 1, last_page: 2 }} />);
-        expect(screen.getByRole('button', { name: 'Anterior' })).toHaveProperty('disabled', true);
-        fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+        expect(screen.getByRole('button', { name: 'Previous' })).toHaveProperty('disabled', true);
+        fireEvent.click(screen.getByRole('button', { name: 'Next' }));
         expect(get).toHaveBeenCalledWith('/worker/history', { page: 2 }, expect.objectContaining({ preserveState: true }));
     });
 });

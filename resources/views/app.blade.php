@@ -4,15 +4,17 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <title inertia>{{ config('app.name', 'Blue Draft') }}</title>
+        <link rel="icon" href="{{ asset('brand/favicon.ico') }}">
+        <link rel="apple-touch-icon" href="{{ asset('brand/icon-192.png') }}">
         <link rel="manifest" href="{{ asset('manifest.json') }}">
-        <meta name="theme-color" content="#020617">
+        <meta name="theme-color" content="#003366">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
         @routes

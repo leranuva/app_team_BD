@@ -12,7 +12,7 @@ class ChangeOrdersRelationManager extends RelationManager
 {
     protected static string $relationship = 'changeOrders';
 
-    protected static ?string $title = 'Órdenes de cambio';
+    protected static ?string $title = 'Change orders';
 
     public function isReadOnly(): bool
     {
@@ -22,11 +22,11 @@ class ChangeOrdersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('code')->label('Código')->placeholder('Sin código'),
-            TextColumn::make('title')->label('Título'),
-            TextColumn::make('status')->label('Estado')->badge()->formatStateUsing(fn ($state) => $state->label()),
-            TextColumn::make('amount_cents')->label('Monto')->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
-            TextColumn::make('time_impact_days')->label('Días'),
+            TextColumn::make('code')->label('Code')->placeholder('No code'),
+            TextColumn::make('title')->label('Title'),
+            TextColumn::make('status')->label('Status')->badge()->formatStateUsing(fn ($state) => $state->label()),
+            TextColumn::make('amount_cents')->label('Amount')->formatStateUsing(fn (int $state): string => '$'.number_format($state / 100, 2)),
+            TextColumn::make('time_impact_days')->label('Days'),
         ])->recordActions([
             ViewAction::make()->url(fn ($record): string => ChangeOrderResource::getUrl('view', ['record' => $record])),
         ]);

@@ -10,12 +10,12 @@ afterEach(cleanup);
 
 describe('hours approval', () => {
     it('stays read only while supervisor approval is not stored', () => {
-        render(<HoursApproval timeZone="America/New_York" week_start="2026-11-16" approval={{ available: false, note: 'La aprobación de horas se gestiona fuera del sistema en este bloque.' }} rows={[{
+        render(<HoursApproval timeZone="America/New_York" week_start="2026-11-16" approval={{ available: false, note: 'Hours approval is handled outside the application.' }} rows={[{
             id: 1, worker: 'Luis Peña', clocked_in_at: '2026-11-23T13:00:00Z', clocked_out_at: '2026-11-23T22:00:00Z', regular_minutes: 480, overtime_minutes: 60,
         }]} />);
         expect(screen.getByText('Luis Peña')).toBeTruthy();
-        expect(screen.getByText(/Regulares: 480 min/)).toBeTruthy();
-        expect(screen.getByText('La aprobación de horas se gestiona fuera del sistema en este bloque.')).toBeTruthy();
-        expect(screen.queryByRole('button', { name: 'Aprobar horas' })).toBeNull();
+        expect(screen.getByText(/Regular: 480 min/)).toBeTruthy();
+        expect(screen.getByText('Hours approval is handled outside the application.')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Approve hours' })).toBeNull();
     });
 });

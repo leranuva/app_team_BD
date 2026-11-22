@@ -29,9 +29,9 @@ class MaterialListDeliveredNotification extends Notification implements ShouldQu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Lista de materiales entregada '.$this->code)
+            ->subject('Material list delivered '.$this->code)
             ->line($this->title)
-            ->line('La entrega quedó registrada. El consumo se anota aparte.')
-            ->action('Ver operaciones', route('dashboard'));
+            ->line('Delivery was recorded. Record usage separately.')
+            ->action('View operations', route('dashboard'));
     }
 }

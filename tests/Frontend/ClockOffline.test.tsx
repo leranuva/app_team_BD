@@ -38,17 +38,17 @@ function mount() {
 describe('offline punch', () => {
     it('stores the punch while offline and sends it when the connection returns', async () => {
         online = false;
-        const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: { data: {}, message: 'Entrada registrada.' } });
+        const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: { data: {}, message: 'Clock-in recorded.' } });
         mount();
-        fireEvent.click(screen.getByRole('button', { name: 'Registrar entrada' }));
-        await screen.findByText('Fichaje pendiente de sincronizar. Se enviará cuando recuperes conexión.');
+        fireEvent.click(screen.getByRole('button', { name: 'Clock in' }));
+        await screen.findByText('Time entry pending sync. It will be sent when you reconnect.');
         expect(post).not.toHaveBeenCalled();
         const pending = JSON.parse(localStorage.getItem('pending-clock-in') ?? '{}');
         expect(pending).toMatchObject({ shift_id: 7, lat: 40.75, lng: -73.9, accuracy: 12 });
 
         online = true;
         window.dispatchEvent(new Event('online'));
-        await screen.findByText('Entrada registrada.');
+        await screen.findByText('Clock-in recorded.');
         expect(post).toHaveBeenCalledWith('/api/attendances/clock-in', expect.objectContaining({ shift_id: 7, lat: 40.75 }), expect.anything());
         expect(localStorage.getItem('pending-clock-in')).toBeNull();
     });
@@ -61,7 +61,7 @@ describe('offline punch', () => {
         }));
         vi.spyOn(axios, 'post').mockRejectedValue(error);
         mount();
-        await screen.findByText('La ventana de fichaje expiró. Contacta a tu supervisor para corregir la asistencia.');
+        await screen.findByText('The time clock window closed. Contact your supervisor to correct the attendance record.');
         expect(localStorage.getItem('pending-clock-in')).toBeNull();
     });
 });

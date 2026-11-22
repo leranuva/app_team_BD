@@ -50,7 +50,7 @@ class SaveWorkerRequest extends FormRequest
             $prefix = "worker-documents/{$kind}/";
 
             if (! Str::startsWith($path, $prefix) || ! preg_match('/^[A-Za-z0-9_-]+\.(pdf|jpe?g|png)$/i', Str::after($path, $prefix))) {
-                $fail('El documento seleccionado no es válido.');
+                $fail('The selected document is invalid.');
             }
         };
     }

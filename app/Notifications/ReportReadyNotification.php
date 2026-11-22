@@ -23,9 +23,9 @@ class ReportReadyNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Reporte listo')
-            ->line($this->label.' ya está generado. El enlace caduca en 15 minutos.')
-            ->action('Descargar', $this->url);
+            ->subject('Report ready')
+            ->line($this->label.' is ready. The link expires in 15 minutes.')
+            ->action('Download', $this->url);
     }
 
     /**

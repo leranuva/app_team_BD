@@ -29,9 +29,9 @@ class ChangeOrderReviewedNotification extends Notification implements ShouldQueu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Orden de cambio en revisión '.$this->code)
+            ->subject('Change order under review '.$this->code)
             ->line($this->title)
-            ->line('La orden pasó a revisión.')
-            ->action('Ver operaciones', route('dashboard'));
+            ->line('The change order is now under review.')
+            ->action('View operations', route('dashboard'));
     }
 }

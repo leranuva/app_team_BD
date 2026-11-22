@@ -1,12 +1,12 @@
 <x-filament-widgets::widget>
     <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <h2 class="text-base font-semibold">Horas de esta semana</h2>
+        <h2 class="text-base font-semibold">Hours this week</h2>
         <table class="mt-3 w-full text-left text-sm">
             <thead>
                 <tr>
-                    <th class="py-1">Obra</th>
-                    <th class="py-1">Regulares</th>
-                    <th class="py-1">Extra</th>
+                    <th class="py-1">Job site</th>
+                    <th class="py-1">Regular</th>
+                    <th class="py-1">Overtime</th>
                 </tr>
             </thead>
             <tbody>
@@ -17,7 +17,7 @@
                         <td class="py-1">{{ $row['overtime_hours'] }}</td>
                     </tr>
                 @empty
-                    <tr><td class="py-1" colspan="3">Sin horas cerradas esta semana.</td></tr>
+                    <tr><td class="py-1" colspan="3">No completed time entries this week.</td></tr>
                 @endforelse
             </tbody>
         </table>

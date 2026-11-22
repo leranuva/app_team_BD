@@ -37,7 +37,7 @@ export function useShiftsFeed(filters: Filters, zone: string) {
         }
         if (Date.now() < retryAfter.current) {
             setLoading(false);
-            return Promise.reject(new Error('Espera antes de reintentar la consulta.'));
+            return Promise.reject(new Error('Wait before trying again.'));
         }
 
         const controller = new AbortController();
@@ -58,7 +58,7 @@ export function useShiftsFeed(filters: Filters, zone: string) {
                     result = await fetchShifts(paddedRange(range, zone), filters, signal);
                 } catch (error) {
                     if (signal.aborted || !axios.isAxiosError(error) || error.response?.status !== 422) throw error;
-                    toast.warning('Se reintentó con el rango visible.', { toasterId: 'shifts' });
+                    toast.warning('Retried with the visible date range.', { toasterId: 'shifts' });
                     result = await fetchShifts(range, filters, signal);
                 }
                 if (signal.aborted) throw signal.reason;
@@ -69,20 +69,20 @@ export function useShiftsFeed(filters: Filters, zone: string) {
                 if (signal.aborted) throw error;
                 const response = axios.isAxiosError(error) ? error.response : undefined;
                 if (response?.status === 403 || response?.status === 401) {
-                    setFailure({ message: 'Sin permisos para ver este calendario.', forbidden: true });
+                    setFailure({ message: 'You do not have permission to view this calendar.', forbidden: true });
                 } else if (response?.status === 429) {
                     const header = response.headers['retry-after'];
                     const delay = header == null ? 0 : Math.max(0, Number.isFinite(Number(header))
                         ? Number(header) * 1000 : Date.parse(String(header)) - Date.now()) || 0;
                     retryAfter.current = Date.now() + delay;
                     setFailure({
-                        message: delay ? 'Demasiadas consultas, espera ' + Math.ceil(delay / 1000) + ' s.' : 'Demasiadas consultas, espera un momento.',
+                        message: delay ? 'Too many requests. Try again in ' + Math.ceil(delay / 1000) + ' s.' : 'Too many requests. Try again shortly.',
                         until: retryAfter.current,
                     });
                 } else {
                     setFailure({ message: response?.status === 422
-                        ? 'Hay demasiados turnos para este rango. Selecciona una vista semanal o ajusta los filtros.'
-                        : 'No se pudieron cargar los turnos. Puedes reintentar la consulta.' });
+                        ? 'Too many shifts in this date range. Switch to week view or adjust the filters.'
+                        : 'Could not load shifts. Try again.' });
                 }
                 throw error;
             } finally {

@@ -26,12 +26,12 @@ export function failureMessage(error: unknown, fallback: string): string {
     const data = error.response?.data as { message?: string; errors?: Record<string, string[]> } | undefined;
     const first = data?.errors ? Object.values(data.errors)[0]?.[0] : undefined;
     if (status === 422) {
-        return data?.message === 'El archivo original ya no está disponible'
+        return data?.message === 'The original file is no longer available'
             ? data.message
-            : first ?? data?.message ?? 'Revisa los datos de la foto.';
+            : first ?? data?.message ?? 'Check the photo details.';
     }
-    if (status === 403) return 'Sin permisos';
-    if (status === 429) return 'Demasiadas operaciones, espera un momento.';
+    if (status === 403) return 'Access denied';
+    if (status === 429) return 'Too many requests. Try again shortly.';
     return fallback;
 }
 
@@ -55,7 +55,7 @@ export async function uploadPhoto(scopeId: number, file: File, caption: string, 
         });
         return { ok: true as const, photo: response.data.data as ScopePhotoItem };
     } catch (error) {
-        return { ok: false as const, message: failureMessage(error, 'No se pudo subir la foto.') };
+        return { ok: false as const, message: failureMessage(error, 'Could not upload the photo.') };
     }
 }
 
@@ -66,7 +66,7 @@ export async function archivePhoto(id: number, reason: string) {
         }, { headers });
         return { ok: true as const, photo: response.data.data as ScopePhotoItem };
     } catch (error) {
-        return { ok: false as const, message: failureMessage(error, 'No se pudo archivar la foto.') };
+        return { ok: false as const, message: failureMessage(error, 'Could not archive the photo.') };
     }
 }
 
@@ -75,6 +75,6 @@ export async function restorePhoto(id: number) {
         const response = await axios.patch(`/api/scope-photos/${id}/restore`, {}, { headers });
         return { ok: true as const, photo: response.data.data as ScopePhotoItem };
     } catch (error) {
-        return { ok: false as const, message: failureMessage(error, 'No se pudo restaurar la foto.') };
+        return { ok: false as const, message: failureMessage(error, 'Could not restore the photo.') };
     }
 }

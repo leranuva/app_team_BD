@@ -24,11 +24,11 @@ class LowConsumptionMaterials extends Page
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-archive-box';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reportes';
+    protected static string|UnitEnum|null $navigationGroup = 'Reports';
 
-    protected static ?string $navigationLabel = 'Materiales con bajo consumo';
+    protected static ?string $navigationLabel = 'Low-usage materials';
 
-    protected static ?string $title = 'Materiales con bajo consumo';
+    protected static ?string $title = 'Low-usage materials';
 
     protected static ?int $navigationSort = 20;
 
@@ -41,12 +41,12 @@ class LowConsumptionMaterials extends Page
     {
         return $schema->components([
             Form::make([
-                Select::make('job_site_id')->label('Obra')->placeholder('Todas las obras visibles')
+                Select::make('job_site_id')->label('Job site')->placeholder('All visible job sites')
                     ->options(fn (): array => $this->siteOptions())->searchable()->live(),
-                Select::make('job_scope_id')->label('Alcance')->placeholder('Todos')
+                Select::make('job_scope_id')->label('Scope')->placeholder('All')
                     ->options(fn (): array => $this->scopeOptions())->searchable(),
-                DatePicker::make('from')->label('Entrega desde')->native(false),
-                DatePicker::make('until')->label('Entrega hasta')->native(false),
+                DatePicker::make('from')->label('Delivered from')->native(false),
+                DatePicker::make('until')->label('Delivered through')->native(false),
             ])->statePath('filters')->columns(4)->live(),
             View::make('filament.reports.low-consumption')
                 ->viewData(fn (): array => ['rows' => $this->rows()]),
@@ -56,7 +56,7 @@ class LowConsumptionMaterials extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('export')->label('Descargar Excel')->action(function (): void {
+            Action::make('export')->label('Download Excel')->action(function (): void {
                 $this->notifyExport(app(ReportExportService::class)->exportExcel(
                     LowConsumptionMaterialsExport::class,
                     $this->filters,

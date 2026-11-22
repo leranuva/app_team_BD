@@ -56,14 +56,14 @@ it('shows the worker today page with the shift and assigned materials', function
         ->assertInertia(fn (Assert $page) => $page
             ->component('Worker/Today')
             ->where('timeZone', 'America/New_York')
-            ->where('shift.id', $this->shift->id)
-            ->where('shift.job_site.name', 'Queens')
-            ->where('shift.job_site.address', '31st Ave')
-            ->where('shift.job_scope.name', 'Encofrado')
-            ->where('shift.supervisor', 'Ana Torres')
-            ->where('shift.role_required', 'Carpintero')
-            ->where('materials.0.id', $item->id)
-            ->where('materials.0.material', $item->material->name));
+            ->where('shifts.0.id', $this->shift->id)
+            ->where('shifts.0.job_site.name', 'Queens')
+            ->where('shifts.0.job_site.address', '31st Ave')
+            ->where('shifts.0.job_scope.name', 'Encofrado')
+            ->where('shifts.0.supervisor', 'Ana Torres')
+            ->where('shifts.0.role_required', 'Carpenter')
+            ->where('shifts.0.materials.0.id', $item->id)
+            ->where('shifts.0.materials.0.material', $item->material->name));
 });
 
 it('limits worker history to the last four weeks', function (): void {
@@ -122,7 +122,7 @@ it('lets a supervisor see the team and keeps hour approval read only', function 
         ->assertInertia(fn (Assert $page) => $page
             ->component('Supervisor/HoursApproval')
             ->where('approval.available', false)
-            ->where('approval.note', 'La aprobación de horas se gestiona fuera del sistema en este bloque.'));
+            ->where('approval.note', 'Hours approval is handled outside the application.'));
 });
 
 it('updates scope progress only when 100 percent matches a completed scope', function (): void {

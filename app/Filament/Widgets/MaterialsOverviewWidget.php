@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class MaterialsOverviewWidget extends StatsOverviewWidget
 {
-    protected ?string $heading = 'Catálogo de materiales';
+    protected ?string $heading = 'Material catalog';
 
     protected int|array|null $columns = 4;
 
@@ -32,10 +32,10 @@ class MaterialsOverviewWidget extends StatsOverviewWidget
             ->implode(', ');
 
         return [
-            Stat::make('Materiales', Material::query()->count()),
-            Stat::make('Activos', Material::query()->active()->count()),
-            Stat::make('Referenciados por listas', Material::query()->has('listItems')->count()),
-            Stat::make('Top 5 categorías', $top !== '' ? $top : '—'),
+            Stat::make('Materials', Material::query()->count()),
+            Stat::make('Active', Material::query()->active()->count()),
+            Stat::make('Used in lists', Material::query()->has('listItems')->count()),
+            Stat::make('Top 5 categories', $top !== '' ? $top : '—'),
         ];
     }
 }

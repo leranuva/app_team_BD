@@ -13,10 +13,11 @@ use Throwable;
 
 class NotifyOutsideAttendanceGeofence
 {
-    public function execute(User $worker, int $siteId, int $shiftId, bool $clockIn): void
+    public function execute(User $worker, int $siteId, ?int $shiftId, bool $clockIn): void
     {
         $operation = $clockIn ? 'entrada' : 'salida';
-        $key = "attendance-geofence:{$worker->id}:{$shiftId}:".($clockIn ? 'in' : 'out');
+        $subject = $shiftId ?? "site-{$siteId}";
+        $key = "attendance-geofence:{$worker->id}:{$subject}:".($clockIn ? 'in' : 'out');
         $site = JobSite::withoutGlobalScope(LogisticsVisibilityScope::class)->withTrashed()->findOrFail($siteId);
         $supervisors = $site->users()->active()->role(LogisticsRole::Supervisor->value)->get();
         if ($supervisors->isEmpty() || ! Cache::add($key, true, now()->addMinutes(5))) {

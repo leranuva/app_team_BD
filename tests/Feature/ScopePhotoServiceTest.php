@@ -31,7 +31,7 @@ beforeEach(function (): void {
 it('stores a private UUID object without using the original name in its path', function (): void {
     $this->travelTo(CarbonImmutable::parse('2026-11-21T14:00:00Z'));
     $file = UploadedFile::fake()->image('turno-gerencia.png');
-    $photo = $this->service->store($this->scope, $this->supervisor, $file, ['caption' => 'Avance']);
+    $photo = $this->service->store($this->scope, $this->supervisor, $file, ['caption' => 'Progress']);
 
     expect($photo->path)->toMatch("#^scopes/{$this->scope->job_site_id}/{$this->scope->id}/[0-9a-f-]{36}\.png$#D")
         ->and($photo->original_name)->toBe('turno-gerencia.png')
@@ -107,8 +107,8 @@ it('keeps a photo archived when its original object is missing', function (): vo
 
     Log::spy();
     expect(fn () => $this->service->restore($photo, $this->supervisor))
-        ->toThrow(RuntimeException::class, 'El archivo original ya no está disponible');
-    Log::shouldHaveReceived('warning')->once()->with('El archivo original ya no está disponible', [
+        ->toThrow(RuntimeException::class, 'The original file is no longer available');
+    Log::shouldHaveReceived('warning')->once()->with('The original file is no longer available', [
         'photo_id' => $photo->id,
         'path' => $photo->path,
     ]);
@@ -134,7 +134,7 @@ it('updates the caption once and ignores an unchanged value', function (): void 
 it('rejects force-filled changes to photo metadata', function (string $attribute, mixed $value): void {
     $photo = ScopePhoto::factory()->create();
     expect(fn () => $photo->forceFill([$attribute => $value])->save())
-        ->toThrow(DomainException::class, 'Los metadatos de la foto son inmutables tras la creación');
+        ->toThrow(DomainException::class, 'Photo metadata cannot be changed after upload');
 })->with([
     ['path', 'other/photo.jpg'], ['lat', 40.6], ['lng', -72.2], ['taken_at', '2026-01-01 00:00:00'],
     ['size_bytes', 1], ['mime_type', 'image/png'],

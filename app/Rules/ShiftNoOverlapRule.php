@@ -28,7 +28,7 @@ class ShiftNoOverlapRule implements ValidationRule
             ->exists();
 
         if ($overlap) {
-            $fail('El trabajador ya tiene un turno que se solapa con ese horario.');
+            $fail('The worker already has an overlapping shift.');
         }
     }
 }

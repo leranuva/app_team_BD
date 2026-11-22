@@ -50,7 +50,7 @@ it('creates a draft and submits it from the table', function (): void {
 
     Livewire::test(ListMaterialLists::class)
         ->callTableAction('submit', $list)
-        ->assertNotified('Lista actualizada');
+        ->assertNotified('List updated');
 
     expect($list->fresh()->status)->toBe(MaterialListStatus::Submitted);
 });
@@ -65,7 +65,7 @@ it('renders the scope summary', function (): void {
     $this->actingAs($this->admin);
 
     Livewire::test(MaterialListScopeWidget::class, ['record' => $this->scope])
-        ->assertSee('Listas de materiales')
-        ->assertSee('Pendientes de aprobación')
-        ->assertSee('sin costos registrados');
+        ->assertSee('Material lists')
+        ->assertSee('Awaiting approval')
+        ->assertSee('no recorded costs');
 });

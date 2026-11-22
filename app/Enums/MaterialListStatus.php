@@ -17,15 +17,15 @@ enum MaterialListStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Draft => 'Borrador',
-            self::Submitted => 'Enviada',
-            self::Approved => 'Aprobada',
-            self::Ordered => 'Ordenada',
-            self::Delivered => 'Entregada',
-            self::PartiallyConsumed => 'Consumo parcial',
-            self::Consumed => 'Consumida',
-            self::Cancelled => 'Cancelada',
-            self::Pending => 'Pendiente',
+            self::Draft => 'Draft',
+            self::Submitted => 'Submitted',
+            self::Approved => 'Approved',
+            self::Ordered => 'Ordered',
+            self::Delivered => 'Delivered',
+            self::PartiallyConsumed => 'Partially consumed',
+            self::Consumed => 'Consumed',
+            self::Cancelled => 'Canceled',
+            self::Pending => 'Pending',
         };
     }
 }

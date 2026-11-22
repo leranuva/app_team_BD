@@ -24,7 +24,7 @@ class ShiftService
 {
     public function eligibleWorkers(int $siteId, ShiftRole $role): Builder
     {
-        return User::operational()->active()->role($role->label())
+        return User::operational()->active()->role($role->logisticsRole()->value)
             ->whereHas('jobSites', fn (Builder $sites) => $sites->whereKey($siteId));
     }
 
@@ -45,16 +45,16 @@ class ShiftService
             $gate->authorize('assignToSite', [Shift::class, $site]);
 
             if (! $this->eligibleWorkers($site->id, $role)->whereKey($data['user_id'])->exists()) {
-                throw ValidationException::withMessages(['user_id' => 'El trabajador debe estar activo, pertenecer a la obra y tener el rol solicitado.']);
+                throw ValidationException::withMessages(['user_id' => 'The worker must be active, assigned to the job site and have the required role.']);
             }
 
             if (isset($data['job_scope_id']) && ! JobScope::where('job_site_id', $site->id)->whereKey($data['job_scope_id'])->exists()) {
-                throw ValidationException::withMessages(['job_scope_id' => 'El alcance debe pertenecer a la obra seleccionada.']);
+                throw ValidationException::withMessages(['job_scope_id' => 'The scope must belong to the selected job site.']);
             }
 
             if ($shift && $record->attendance()->withoutGlobalScopes()->exists()
                 && ($record->job_site_id !== $site->id || $record->user_id !== (int) $data['user_id'])) {
-                throw ValidationException::withMessages(['user_id' => 'Un turno con asistencia conserva el trabajador y la obra originales.']);
+                throw ValidationException::withMessages(['user_id' => 'A shift with attendance keeps its original worker and job site.']);
             }
 
             $this->ensureNoOverlap((int) $data['user_id'], $start, $end, $shift?->id);
@@ -63,7 +63,7 @@ class ShiftService
             $record->forceFill([
                 'starts_at' => $start,
                 'ends_at' => $end,
-                'required_role_id' => Role::findByName($role->label(), 'web')->id,
+                'required_role_id' => Role::findByName($role->logisticsRole()->value, 'web')->id,
                 'updated_by' => $actor->id,
             ]);
 

@@ -39,14 +39,18 @@ class AttendanceController extends Controller
     private function punch(PunchAttendanceRequest $request, bool $clockIn): JsonResponse
     {
         $worker = $request->user();
-        $shiftId = $request->integer('shift_id');
+        $shiftId = $request->validated('shift_id') === null ? null : $request->integer('shift_id');
         $position = [
-            $worker, $shiftId, (float) $request->validated('lat'), (float) $request->validated('lng'),
+            (float) $request->validated('lat'), (float) $request->validated('lng'),
             (float) $request->validated('accuracy'), CarbonImmutable::parse($request->validated('timestamp')),
         ];
 
         try {
-            $record = $clockIn ? $this->attendance->clockIn(...$position) : $this->attendance->clockOut(...$position);
+            $record = match (true) {
+                ! $clockIn => $this->attendance->clockOut($worker, $shiftId, ...$position),
+                $shiftId !== null => $this->attendance->clockIn($worker, $shiftId, ...$position),
+                default => $this->attendance->clockInAtSite($worker, $request->integer('job_site_id'), ...$position),
+            };
         } catch (OutsideAttendanceGeofence $exception) {
             rescue(fn () => $this->notify->execute($worker, $exception->siteId, $shiftId, $clockIn));
             throw $exception;
@@ -54,7 +58,7 @@ class AttendanceController extends Controller
 
         return response()->json([
             'data' => new AttendanceResource($record),
-            'message' => $clockIn ? 'Entrada registrada.' : 'Salida registrada.',
+            'message' => $clockIn ? 'Clock-in recorded.' : 'Clock-out recorded.',
         ], $clockIn ? 201 : 200);
     }
 

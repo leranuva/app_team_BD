@@ -51,9 +51,9 @@ class CorrectAttendanceRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'correction_reason.required' => 'El motivo de la corrección es obligatorio.',
-            'correction_reason.min' => 'El motivo debe tener al menos 10 caracteres.',
-            'clock_out_at.after' => 'La salida debe ser posterior a la entrada.',
+            'correction_reason.required' => 'A correction reason is required.',
+            'correction_reason.min' => 'The reason must contain at least 10 characters.',
+            'clock_out_at.after' => 'Clock-out must be after clock-in.',
         ];
     }
 }

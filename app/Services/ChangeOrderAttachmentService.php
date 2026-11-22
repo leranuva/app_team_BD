@@ -26,13 +26,13 @@ class ChangeOrderAttachmentService
     {
         $order = ChangeOrder::withoutGlobalScope(LogisticsVisibilityScope::class)->findOrFail($order->getKey());
         if (! $order->isEditable()) {
-            throw ValidationException::withMessages(['attachments' => 'Solo un borrador admite adjuntos.']);
+            throw ValidationException::withMessages(['attachments' => 'Attachments can only be added to drafts.']);
         }
 
         $files = array_values(array_filter($files, fn (mixed $file): bool => $file instanceof UploadedFile));
         $existing = $order->attachments()->count();
         if ($existing + count($files) > 5) {
-            throw ValidationException::withMessages(['attachments' => 'Una orden admite como máximo 5 adjuntos.']);
+            throw ValidationException::withMessages(['attachments' => 'A change order can have up to 5 attachments.']);
         }
 
         $stored = [];
@@ -58,16 +58,16 @@ class ChangeOrderAttachmentService
         validator(['file' => $file], [
             'file' => ['required', 'file', 'max:20480', 'mimetypes:application/pdf,image/jpeg,image/png'],
         ], [
-            'file.max' => 'Cada adjunto puede medir hasta 20 MB.',
-            'file.mimetypes' => 'Adjunta un PDF, JPEG o PNG.',
+            'file.max' => 'Each attachment can be up to 20 MB.',
+            'file.mimetypes' => 'Attach a PDF, JPEG or PNG file.',
         ])->validate();
 
         $mime = (string) $file->getMimeType();
-        $extension = self::EXTENSIONS[$mime] ?? throw ValidationException::withMessages(['file' => 'El formato del adjunto no es válido.']);
+        $extension = self::EXTENSIONS[$mime] ?? throw ValidationException::withMessages(['file' => 'The attachment format is invalid.']);
         $path = 'change-orders/'.$order->id.'/'.Str::uuid().'.'.$extension;
 
         if ($disk->putFileAs(dirname($path), $file, basename($path), ['visibility' => 'private']) === false) {
-            throw new RuntimeException('No se pudo guardar el adjunto en S3.');
+            throw new RuntimeException('Could not save the attachment to S3.');
         }
 
         try {

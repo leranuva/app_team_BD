@@ -50,13 +50,13 @@ trait BuildsReportFilters
     protected function notifyExport(array $result): void
     {
         if (isset($result['job_id'])) {
-            Notification::make()->title('El reporte se está generando. Te avisaremos cuando esté listo.')->success()->send();
+            Notification::make()->title('The report is being generated. You will be notified when it is ready.')->success()->send();
 
             return;
         }
 
-        Notification::make()->title('Reporte listo')
-            ->body('Enlace válido 15 minutos: '.$result['url'])
+        Notification::make()->title('Report ready')
+            ->body('Link valid for 15 minutes: '.$result['url'])
             ->success()
             ->send();
     }

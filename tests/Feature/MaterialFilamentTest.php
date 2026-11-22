@@ -113,7 +113,7 @@ it('keeps a referenced material from being deleted', function (): void {
 
     Livewire::test(ListMaterials::class)
         ->callTableAction('delete', $material)
-        ->assertNotified('No se puede eliminar: una lista referencia este material. Desactívalo.');
+        ->assertNotified('This material is used in a list. Deactivate it instead of deleting it.');
 
     expect(Material::query()->whereKey($material->id)->exists())->toBeTrue();
 });
@@ -128,7 +128,7 @@ it('imports a csv from Filament and reports an invalid file', function (): void 
                 file_get_contents(database_path('data/cwicr_materials_sample.csv')),
             ),
         ])
-        ->assertNotified('Importados: 10 · Actualizados: 0 · Omitidos: 0');
+        ->assertNotified('Imported: 10 · Updated: 0 · Skipped: 0');
 
     expect(Material::query()->count())->toBe(10);
 
@@ -136,7 +136,7 @@ it('imports a csv from Filament and reports an invalid file', function (): void 
         ->callAction('import', data: [
             'file' => UploadedFile::fake()->createWithContent('malo.csv', "code,name,category\nMAT-1,Arena,General\n"),
         ])
-        ->assertNotified('El CSV debe incluir code, name, category y unit. Columnas encontradas: code, name, category.');
+        ->assertNotified('The CSV must include code, name, category and unit. Columns found: code, name, category.');
 
     $this->actingAs($this->supervisor);
     Livewire::test(ImportMaterials::class)->assertForbidden();
@@ -149,10 +149,10 @@ it('renders the catalog summary widget', function (): void {
     $this->actingAs($this->supervisor);
 
     Livewire::test(MaterialsOverviewWidget::class)
-        ->assertSee('Materiales')
+        ->assertSee('Materials')
         ->assertSee('3')
-        ->assertSee('Activos')
+        ->assertSee('Active')
         ->assertSee('2')
-        ->assertSee('Referenciados por listas')
+        ->assertSee('Used in lists')
         ->assertSee('Steel & Metal (2)');
 });

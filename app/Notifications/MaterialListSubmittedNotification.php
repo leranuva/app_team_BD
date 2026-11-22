@@ -29,9 +29,9 @@ class MaterialListSubmittedNotification extends Notification implements ShouldQu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Lista de materiales enviada '.$this->code)
+            ->subject('Material list submitted '.$this->code)
             ->line($this->title)
-            ->line('La lista quedó enviada y espera aprobación.')
-            ->action('Ver operaciones', route('dashboard'));
+            ->line('The material list was submitted and is awaiting approval.')
+            ->action('View operations', route('dashboard'));
     }
 }

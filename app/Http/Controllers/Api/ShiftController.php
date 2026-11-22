@@ -45,7 +45,7 @@ class ShiftController extends Controller
             : $query->orderBy('starts_at')->orderBy('id')->limit(2001)->get();
 
         if ($shifts->count() > 2000) {
-            throw ValidationException::withMessages(['to' => 'La consulta supera 2000 turnos. Selecciona un rango más corto.']);
+            throw ValidationException::withMessages(['to' => 'This request exceeds 2,000 shifts. Choose a shorter date range.']);
         }
 
         $editable = $shifts->isEmpty() ? [] : $policy->editableShifts($request->user())
@@ -75,7 +75,7 @@ class ShiftController extends Controller
 
         return response()->json([
             'data' => new ShiftResource($shift->load(ShiftResource::relations())),
-            'message' => 'Turno reasignado',
+            'message' => 'Shift rescheduled',
         ]);
     }
 }

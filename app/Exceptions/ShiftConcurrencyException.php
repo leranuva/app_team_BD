@@ -11,7 +11,7 @@ class ShiftConcurrencyException extends RuntimeException
 {
     public function __construct(public readonly Shift $current)
     {
-        parent::__construct('El turno cambió. Actualiza el calendario e inténtalo de nuevo.');
+        parent::__construct('The shift changed. Refresh the calendar and try again.');
     }
 
     public function render(): JsonResponse

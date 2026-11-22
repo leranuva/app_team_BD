@@ -42,9 +42,9 @@ class MaterialListResource extends Resource
 {
     protected static ?string $model = MaterialList::class;
 
-    protected static ?string $modelLabel = 'lista de materiales';
+    protected static ?string $modelLabel = 'material list';
 
-    protected static ?string $pluralModelLabel = 'listas de materiales';
+    protected static ?string $pluralModelLabel = 'material lists';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
@@ -56,10 +56,10 @@ class MaterialListResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('job_site_id')->label('Obra')->searchable()->live()
+            Select::make('job_site_id')->label('Job site')->searchable()->live()
                 ->options(fn (): array => JobSite::query()->orderBy('name')->pluck('name', 'id')->all())
                 ->disabledOn('edit')->dehydrated(),
-            Select::make('job_scope_id')->label('Alcance')->required()->searchable()->live()
+            Select::make('job_scope_id')->label('Scope')->required()->searchable()->live()
                 ->options(fn (Get $get): array => $get('job_site_id')
                     ? JobScope::query()->where('job_site_id', $get('job_site_id'))->orderBy('name')->pluck('name', 'id')->all()
                     : JobScope::query()->orderBy('name')->pluck('name', 'id')->all())
@@ -70,16 +70,16 @@ class MaterialListResource extends Resource
                     }
                 })
                 ->disabledOn('edit'),
-            TextInput::make('title')->label('Título')->required()->maxLength(200),
-            Textarea::make('notes')->label('Notas')->maxLength(5000)->columnSpanFull(),
-            Repeater::make('items')->label('Materiales')->columnSpanFull()->minItems(1)->schema([
+            TextInput::make('title')->label('Title')->required()->maxLength(200),
+            Textarea::make('notes')->label('Notes')->maxLength(5000)->columnSpanFull(),
+            Repeater::make('items')->label('Materials')->columnSpanFull()->minItems(1)->schema([
                 Select::make('material_id')->label('Material')->required()->searchable()
                     ->options(fn (): array => Material::query()->active()->orderBy('name')->pluck('name', 'id')->all()),
-                TextInput::make('budgeted_quantity')->label('Presupuestada')->numeric()->default(0)->minValue(0),
-                TextInput::make('requested_quantity')->label('Solicitada')->numeric()->required()->minValue(0),
-                TextInput::make('unit_cost_cents')->label('Costo (centavos)')->numeric()->integer()->minValue(0)
-                    ->helperText('Opcional. Es un apunte de la factura, no un cálculo.'),
-                Textarea::make('notes')->label('Notas')->maxLength(2000),
+                TextInput::make('budgeted_quantity')->label('Budgeted')->numeric()->default(0)->minValue(0),
+                TextInput::make('requested_quantity')->label('Requested')->numeric()->required()->minValue(0),
+                TextInput::make('unit_cost_cents')->label('Cost (cents)')->numeric()->integer()->minValue(0)
+                    ->helperText('Optional invoice note.'),
+                Textarea::make('notes')->label('Notes')->maxLength(2000),
             ]),
         ]);
     }
@@ -87,26 +87,26 @@ class MaterialListResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            TextEntry::make('code')->label('Código'),
-            TextEntry::make('title')->label('Título'),
-            TextEntry::make('status')->label('Estado')->badge()->formatStateUsing(fn (MaterialListStatus $state): string => $state->label()),
-            TextEntry::make('jobSite.name')->label('Obra'),
-            TextEntry::make('jobScope.name')->label('Alcance'),
-            TextEntry::make('requestedBy.name')->label('Solicitada por'),
-            TextEntry::make('approvedBy.name')->label('Aprobada por')->placeholder('—'),
-            TextEntry::make('ordered_at')->label('Ordenada')->dateTime('d/m/Y H:i', 'America/New_York')->placeholder('—'),
-            TextEntry::make('delivered_at')->label('Entregada')->dateTime('d/m/Y H:i', 'America/New_York')->placeholder('—'),
-            TextEntry::make('consumed_at')->label('Consumida')->dateTime('d/m/Y H:i', 'America/New_York')->placeholder('—'),
-            TextEntry::make('cancelled_reason')->label('Motivo de cancelación')->placeholder('—')->columnSpanFull(),
-            TextEntry::make('notes')->label('Notas')->placeholder('—')->columnSpanFull(),
-            RepeatableEntry::make('items')->label('Ítems')->schema([
+            TextEntry::make('code')->label('Code'),
+            TextEntry::make('title')->label('Title'),
+            TextEntry::make('status')->label('Status')->badge()->formatStateUsing(fn (MaterialListStatus $state): string => $state->label()),
+            TextEntry::make('jobSite.name')->label('Job site'),
+            TextEntry::make('jobScope.name')->label('Scope'),
+            TextEntry::make('requestedBy.name')->label('Requested by'),
+            TextEntry::make('approvedBy.name')->label('Approved by')->placeholder('—'),
+            TextEntry::make('ordered_at')->label('Ordered')->dateTime('m/d/Y H:i', 'America/New_York')->placeholder('—'),
+            TextEntry::make('delivered_at')->label('Delivered')->dateTime('m/d/Y H:i', 'America/New_York')->placeholder('—'),
+            TextEntry::make('consumed_at')->label('Consumed')->dateTime('m/d/Y H:i', 'America/New_York')->placeholder('—'),
+            TextEntry::make('cancelled_reason')->label('Cancellation reason')->placeholder('—')->columnSpanFull(),
+            TextEntry::make('notes')->label('Notes')->placeholder('—')->columnSpanFull(),
+            RepeatableEntry::make('items')->label('Items')->schema([
                 TextEntry::make('material.name')->label('Material'),
-                TextEntry::make('budgeted_quantity')->label('Presupuestada'),
-                TextEntry::make('requested_quantity')->label('Solicitada'),
-                TextEntry::make('approved_quantity')->label('Aprobada')->placeholder('—'),
-                TextEntry::make('delivered_quantity')->label('Entregada')->placeholder('—'),
-                TextEntry::make('consumed_quantity')->label('Consumida')->placeholder('—'),
-                TextEntry::make('unit_cost_cents')->label('Costo')->placeholder('—'),
+                TextEntry::make('budgeted_quantity')->label('Budgeted'),
+                TextEntry::make('requested_quantity')->label('Requested'),
+                TextEntry::make('approved_quantity')->label('Approved')->placeholder('—'),
+                TextEntry::make('delivered_quantity')->label('Delivered')->placeholder('—'),
+                TextEntry::make('consumed_quantity')->label('Consumed')->placeholder('—'),
+                TextEntry::make('unit_cost_cents')->label('Cost')->placeholder('—'),
             ])->columnSpanFull(),
         ]);
     }
@@ -114,22 +114,22 @@ class MaterialListResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('code')->label('Código')->searchable(),
-            TextColumn::make('title')->label('Título')->searchable()->limit(40),
-            TextColumn::make('jobScope.name')->label('Alcance'),
-            TextColumn::make('status')->label('Estado')->badge()->formatStateUsing(fn (MaterialListStatus $state): string => $state->label()),
-            TextColumn::make('requestedBy.name')->label('Solicitante'),
-            TextColumn::make('total')->label('Total solicitado')->state(function (MaterialList $record): string {
+            TextColumn::make('code')->label('Code')->searchable(),
+            TextColumn::make('title')->label('Title')->searchable()->limit(40),
+            TextColumn::make('jobScope.name')->label('Scope'),
+            TextColumn::make('status')->label('Status')->badge()->formatStateUsing(fn (MaterialListStatus $state): string => $state->label()),
+            TextColumn::make('requestedBy.name')->label('Requester'),
+            TextColumn::make('total')->label('Total requested')->state(function (MaterialList $record): string {
                 $total = $record->totalRequestedValueCents();
 
-                return $total === null ? 'sin costos' : '$'.number_format($total / 100, 2);
+                return $total === null ? 'no costs' : '$'.number_format($total / 100, 2);
             }),
-            TextColumn::make('created_at')->label('Creada')->dateTime('d/m/Y H:i', 'America/New_York'),
+            TextColumn::make('created_at')->label('Created')->dateTime('m/d/Y H:i', 'America/New_York'),
         ])->filters([
-            SelectFilter::make('job_site_id')->label('Obra')->relationship('jobSite', 'name'),
-            SelectFilter::make('job_scope_id')->label('Alcance')->relationship('jobScope', 'name'),
-            SelectFilter::make('status')->label('Estado')->options(collect(MaterialListStatus::cases())->mapWithKeys(fn (MaterialListStatus $status) => [$status->value => $status->label()])),
-            SelectFilter::make('requested_by')->label('Solicitante')->relationship('requestedBy', 'name'),
+            SelectFilter::make('job_site_id')->label('Job site')->relationship('jobSite', 'name'),
+            SelectFilter::make('job_scope_id')->label('Scope')->relationship('jobScope', 'name'),
+            SelectFilter::make('status')->label('Status')->options(collect(MaterialListStatus::cases())->mapWithKeys(fn (MaterialListStatus $status) => [$status->value => $status->label()])),
+            SelectFilter::make('requested_by')->label('Requester')->relationship('requestedBy', 'name'),
         ])->recordActions([
             ViewAction::make(),
             EditAction::make(),
@@ -140,13 +140,13 @@ class MaterialListResource extends Resource
     public static function transitionActions(): array
     {
         return [
-            self::simpleAction('submit', 'Enviar', fn (MaterialList $list) => app(MaterialListService::class)->submit($list, Auth::user())),
-            self::quantityAction('approve', 'Aprobar', 'approve', fn (MaterialList $list, array $quantities) => app(MaterialListService::class)->approve($list, Auth::user(), $quantities)),
-            self::simpleAction('markOrdered', 'Marcar ordenada', fn (MaterialList $list) => app(MaterialListService::class)->markOrdered($list, Auth::user())),
-            self::quantityAction('registerDelivery', 'Registrar entrega', 'registerDelivery', fn (MaterialList $list, array $quantities, bool $confirm) => app(MaterialListService::class)->registerDelivery($list, Auth::user(), $quantities, $confirm), true),
-            self::quantityAction('registerConsumption', 'Registrar consumo', 'registerConsumption', fn (MaterialList $list, array $quantities, bool $confirm) => app(MaterialListService::class)->registerConsumption($list, Auth::user(), $quantities, $confirm), true),
-            Action::make('cancel')->label('Cancelar')->visible(fn (MaterialList $list): bool => Auth::user()->can('cancel', $list))
-                ->schema([Textarea::make('reason')->label('Motivo')->required()->maxLength(2000)])
+            self::simpleAction('submit', 'Submit', fn (MaterialList $list) => app(MaterialListService::class)->submit($list, Auth::user())),
+            self::quantityAction('approve', 'Approve', 'approve', fn (MaterialList $list, array $quantities) => app(MaterialListService::class)->approve($list, Auth::user(), $quantities)),
+            self::simpleAction('markOrdered', 'Mark as ordered', fn (MaterialList $list) => app(MaterialListService::class)->markOrdered($list, Auth::user())),
+            self::quantityAction('registerDelivery', 'Record delivery', 'registerDelivery', fn (MaterialList $list, array $quantities, bool $confirm) => app(MaterialListService::class)->registerDelivery($list, Auth::user(), $quantities, $confirm), true),
+            self::quantityAction('registerConsumption', 'Record usage', 'registerConsumption', fn (MaterialList $list, array $quantities, bool $confirm) => app(MaterialListService::class)->registerConsumption($list, Auth::user(), $quantities, $confirm), true),
+            Action::make('cancel')->label('Cancel')->visible(fn (MaterialList $list): bool => Auth::user()->can('cancel', $list))
+                ->schema([Textarea::make('reason')->label('Reason')->required()->maxLength(2000)])
                 ->action(fn (MaterialList $list, array $data) => self::run(fn () => app(MaterialListService::class)->cancel($list, Auth::user(), $data['reason']))),
         ];
     }
@@ -174,12 +174,12 @@ class MaterialListResource extends Resource
         return Action::make($name)->label($label)
             ->visible(fn (MaterialList $list): bool => Auth::user()->can($ability, $list))
             ->schema([
-                Repeater::make('lines')->label('Cantidades')->addable(false)->deletable(false)->schema([
+                Repeater::make('lines')->label('Quantities')->addable(false)->deletable(false)->schema([
                     Hidden::make('id'),
                     TextInput::make('label')->label('Material')->disabled()->dehydrated(false),
-                    TextInput::make('quantity')->label('Cantidad')->required()->numeric()->minValue(0),
+                    TextInput::make('quantity')->label('Quantity')->required()->numeric()->minValue(0),
                 ]),
-                Checkbox::make('confirm')->label('Confirmar si la cantidad supera lo permitido')->visible($confirm),
+                Checkbox::make('confirm')->label('Confirm when the quantity exceeds the allowed amount')->visible($confirm),
             ])
             ->fillForm(fn (MaterialList $list): array => [
                 'lines' => $list->items()->with('material')->get()->map(fn ($item): array => [
@@ -203,7 +203,7 @@ class MaterialListResource extends Resource
     {
         try {
             $callback();
-            Notification::make()->title('Lista actualizada')->success()->send();
+            Notification::make()->title('List updated')->success()->send();
         } catch (InvalidMaterialListTransitionException|AuthorizationException|ValidationException $exception) {
             $message = $exception instanceof ValidationException
                 ? collect($exception->errors())->flatten()->first()

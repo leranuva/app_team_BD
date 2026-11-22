@@ -32,7 +32,7 @@ class ScopePhotosRelationManager extends RelationManager
 {
     protected static string $relationship = 'photos';
 
-    protected static ?string $title = 'Fotos de avance';
+    protected static ?string $title = 'Progress photos';
 
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
@@ -49,17 +49,17 @@ class ScopePhotosRelationManager extends RelationManager
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with('uploadedBy:id,name'))
             ->columns([
-                ViewColumn::make('preview')->label('Foto')->view('filament.scope-photos.thumbnail'),
-                TextColumn::make('caption')->label('Descripción')->limit(60)->placeholder('Sin descripción'),
-                TextColumn::make('taken_at')->label('Captura')->dateTime('M j, Y H:i', config('app.business_timezone')),
-                TextColumn::make('uploadedBy.name')->label('Subida por'),
-                TextColumn::make('archiveState')->label('Estado')->badge()
-                    ->state(fn (ScopePhoto $record): string => $record->archived_at === null ? 'Activa' : 'Archivada')
+                ViewColumn::make('preview')->label('Photo')->view('filament.scope-photos.thumbnail'),
+                TextColumn::make('caption')->label('Description')->limit(60)->placeholder('No description'),
+                TextColumn::make('taken_at')->label('Taken')->dateTime('M j, Y H:i', config('app.business_timezone')),
+                TextColumn::make('uploadedBy.name')->label('Uploaded by'),
+                TextColumn::make('archiveState')->label('Status')->badge()
+                    ->state(fn (ScopePhoto $record): string => $record->archived_at === null ? 'Active' : 'Archived')
                     ->color(fn (ScopePhoto $record): string => $record->archived_at === null ? 'success' : 'gray'),
             ])
             ->filters([
-                SelectFilter::make('archiveState')->label('Estado')->options([
-                    'active' => 'Activas', 'archived' => 'Archivadas', 'all' => 'Todas',
+                SelectFilter::make('archiveState')->label('Status')->options([
+                    'active' => 'Active', 'archived' => 'Archived', 'all' => 'All',
                 ])->default('active')->selectablePlaceholder(false)
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? 'active') {
                         'archived' => $query->whereNotNull('archived_at'),
@@ -69,24 +69,24 @@ class ScopePhotosRelationManager extends RelationManager
             ])
             ->headerActions([$this->uploadAction()])
             ->recordActions([
-                Action::make('viewPhoto')->label('Ver')->authorize('view')
-                    ->modalHeading('Foto de avance')
+                Action::make('viewPhoto')->label('View')->authorize('view')
+                    ->modalHeading('Progress photo')
                     ->modalContent(fn (ScopePhoto $record) => view('filament.scope-photos.detail', ['photo' => $record]))
-                    ->modalSubmitAction(false)->modalCancelActionLabel('Cerrar'),
-                Action::make('archive')->label('Archivar')->authorize('archive')
+                    ->modalSubmitAction(false)->modalCancelActionLabel('Close'),
+                Action::make('archive')->label('Archive')->authorize('archive')
                     ->visible(fn (ScopePhoto $record) => $record->archived_at === null)
                     ->schema([self::reasonField()])
                     ->action(function (ScopePhoto $record, array $data): void {
                         app(ScopePhotoService::class)->archive($record, Auth::user(), $data['reason'] ?? null);
-                        Notification::make()->success()->title('Foto archivada')->send();
+                        Notification::make()->success()->title('Photo archived')->send();
                     }),
-                Action::make('restore')->label('Restaurar')->authorize('restore')
+                Action::make('restore')->label('Restore')->authorize('restore')
                     ->visible(fn (ScopePhoto $record) => $record->archived_at !== null)
                     ->requiresConfirmation()
                     ->action(function (ScopePhoto $record): void {
                         try {
                             app(ScopePhotoService::class)->restore($record, Auth::user());
-                            Notification::make()->success()->title('Foto restaurada')->send();
+                            Notification::make()->success()->title('Photo restored')->send();
                         } catch (ScopePhotoOriginalMissing $exception) {
                             Notification::make()->danger()->title($exception->getMessage())->send();
                         }
@@ -94,7 +94,7 @@ class ScopePhotosRelationManager extends RelationManager
             ])
             ->checkIfRecordIsSelectableUsing(fn (ScopePhoto $record) => $record->archived_at === null)
             ->toolbarActions([
-                BulkAction::make('archiveSelected')->label('Archivar seleccionadas')
+                BulkAction::make('archiveSelected')->label('Archive selected')
                     ->authorizeIndividualRecords('archive')->schema([self::reasonField()])
                     ->deselectRecordsAfterCompletion()
                     ->action(function (Collection $records, array $data): void {
@@ -102,34 +102,33 @@ class ScopePhotosRelationManager extends RelationManager
                             app(ScopePhotoService::class)->archive($photo, Auth::user(), $data['reason'] ?? null);
                         }
 
-                        Notification::make()->success()->title('Fotos archivadas')->send();
+                        Notification::make()->success()->title('Photos archived')->send();
                     }),
             ]);
     }
 
     private function uploadAction(): Action
     {
-        return Action::make('uploadPhoto')->label('Añadir foto')
+        return Action::make('uploadPhoto')->label('Add photo')
             ->authorize(fn () => Gate::allows('create', [ScopePhoto::class, $this->getOwnerRecord()]))
             ->databaseTransaction(false)
             ->schema([
-                // storeFiles(false) evita que Filament persista una ruta propia. El archivo temporal
-                // se entrega a ScopePhotoService::store(), que crea el objeto UUID y lee MIME y tamaño desde S3.
-                FileUpload::make('path')->label('Imagen')->disk('s3')->visibility('private')
+                // ScopePhotoService owns the upload and reads the stored MIME type and size from S3.
+                FileUpload::make('path')->label('Image')->disk('s3')->visibility('private')
                     ->image()->maxSize(10240)->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                     ->required()->preventFilePathTampering()->storeFiles(false),
-                Textarea::make('caption')->label('Descripción')->maxLength(500),
-                DateTimePicker::make('taken_at')->label('Capturada en Nueva York')
+                Textarea::make('caption')->label('Description')->maxLength(500),
+                DateTimePicker::make('taken_at')->label('Taken at (New York)')
                     ->timezone(config('app.business_timezone'))->default(now())->seconds(false),
-                Section::make('Coordenadas')->collapsed()->columns(2)->schema([
-                    TextInput::make('lat')->label('Latitud')->numeric()->minValue(-90)->maxValue(90),
-                    TextInput::make('lng')->label('Longitud')->numeric()->minValue(-180)->maxValue(180),
+                Section::make('Coordinates')->collapsed()->columns(2)->schema([
+                    TextInput::make('lat')->label('Latitude')->numeric()->minValue(-90)->maxValue(90),
+                    TextInput::make('lng')->label('Longitude')->numeric()->minValue(-180)->maxValue(180),
                 ]),
             ])
             ->action(function (Action $action, array $data): void {
                 $file = $data['path'] ?? null;
                 if (! $file instanceof UploadedFile) {
-                    Notification::make()->danger()->title('Selecciona un archivo para subir.')->send();
+                    Notification::make()->danger()->title('Select a file to upload.')->send();
                     $action->halt();
                 }
 
@@ -144,12 +143,12 @@ class ScopePhotosRelationManager extends RelationManager
                     $action->halt();
                 }
 
-                Notification::make()->success()->title('Foto subida')->send();
+                Notification::make()->success()->title('Photo uploaded')->send();
             });
     }
 
     private static function reasonField(): Textarea
     {
-        return Textarea::make('reason')->label('Motivo de archivo')->maxLength(500);
+        return Textarea::make('reason')->label('Archive reason')->maxLength(500);
     }
 }

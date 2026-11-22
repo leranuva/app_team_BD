@@ -67,7 +67,7 @@ const original = {
 const options = {
     can_edit: true,
     job_sites: [{ id: 3, name: 'Brooklyn' }],
-    statuses: [{ value: 'programmed', label: 'Programado' }],
+    statuses: [{ value: 'programmed', label: 'Scheduled' }],
     roles: [{ value: 'carpintero', label: 'Carpintero' }],
 };
 let coarse = false;
@@ -98,7 +98,7 @@ describe('shift calendar', () => {
     it('starts from shared filters and deduplicates identical visible ranges', async () => {
         window.history.replaceState(null, '', '/shifts/calendar?job_site_id=3&status=programmed');
         await mount();
-        expect((screen.getByRole('combobox', { name: 'Obra' }) as HTMLSelectElement).value).toBe('3');
+        expect((screen.getByRole('combobox', { name: 'Job site' }) as HTMLSelectElement).value).toBe('3');
         expect(axios.get).toHaveBeenCalledTimes(1);
         expect(axios.get).toHaveBeenCalledWith('/api/shifts', expect.objectContaining({
             params: { from: '2026-11-09', to: '2026-11-30', job_site_id: '3', status: 'programmed' },
@@ -109,7 +109,7 @@ describe('shift calendar', () => {
         const current = { ...original, start: '2026-11-21T09:00:00-05:00', updated_at: '2026-11-20T16:43:00-05:00' };
         const patch = vi.spyOn(axios, 'patch').mockResolvedValue({ data: { data: current } });
         fireEvent.click(await mount());
-        await screen.findByText('Turno reasignado');
+        await screen.findByText('Shift rescheduled');
         expect(patch).toHaveBeenCalledWith('/api/shifts/1/reassign', {
             start_at: '2026-11-21T09:00:00-05:00', end_at: '2026-11-21T13:00:00-05:00', expected_updated_at: original.updated_at,
         }, expect.anything());
@@ -122,7 +122,7 @@ describe('shift calendar', () => {
         const current = { ...original, start: '2026-11-21T11:00:00-05:00', updated_at: '2026-11-20T16:44:00-05:00', status: 'confirmed' };
         vi.spyOn(axios, 'patch').mockRejectedValue({ isAxiosError: true, response: { status: 409, data: { current } } });
         fireEvent.click(await mount());
-        await screen.findByText('Otro usuario modificó el turno; se actualizó la vista.');
+        await screen.findByText('Another user changed this shift. The calendar is now up to date.');
         expect(screen.getByTestId('event-start').textContent).toBe(current.start);
         expect(screen.getByTestId('event-color').textContent).toBe('#DCFCE7');
         expect(revert).not.toHaveBeenCalled();
@@ -142,7 +142,7 @@ describe('shift calendar', () => {
         const patch = vi.spyOn(axios, 'patch').mockResolvedValue({ data: { data: current } });
         await mount();
         fireEvent.click(screen.getByRole('button', { name: 'Simular ajuste de duración' }));
-        await screen.findByText('Turno reasignado');
+        await screen.findByText('Shift rescheduled');
         expect(patch).toHaveBeenCalledWith('/api/shifts/1/reassign', {
             start_at: original.start, end_at: current.end, expected_updated_at: original.updated_at,
         }, expect.anything());
@@ -150,8 +150,8 @@ describe('shift calendar', () => {
     });
 
     it.each([
-        [403, 'Sin permisos para reasignar este turno.'],
-        [429, 'Demasiadas operaciones, espera un momento.'],
+        [403, 'You do not have permission to reschedule this shift.'],
+        [429, 'Too many requests. Try again shortly.'],
     ])('reverts after a %i response and shows the reason', async (status, message) => {
         vi.spyOn(axios, 'patch').mockRejectedValue({ isAxiosError: true, response: { status } });
         fireEvent.click(await mount());
@@ -163,8 +163,8 @@ describe('shift calendar', () => {
         const patch = vi.spyOn(axios, 'patch').mockRejectedValueOnce({ isAxiosError: true })
             .mockResolvedValueOnce({ data: { data: original } });
         fireEvent.click(await mount());
-        fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
-        await screen.findByText('Turno reasignado');
+        fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+        await screen.findByText('Shift rescheduled');
         expect(patch).toHaveBeenCalledTimes(2);
         expect(revert).toHaveBeenCalledOnce();
     });
@@ -176,8 +176,8 @@ describe('shift calendar', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Abrir turno' }));
         const dialog = await screen.findByRole('dialog');
         await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
-        expect(screen.getByLabelText('Inicio en Nueva York')).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Guardar horario' })).toBeTruthy();
+        expect(screen.getByLabelText('Start time (New York)')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Save shift times' })).toBeTruthy();
         fireEvent.keyDown(window, { key: 'Escape' });
         await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     });
@@ -191,10 +191,10 @@ describe('shift calendar', () => {
             .mockResolvedValueOnce({ data: { data: current } });
         await mount();
         fireEvent.click(screen.getByRole('button', { name: 'Abrir turno' }));
-        fireEvent.click(await screen.findByRole('button', { name: 'Guardar horario' }));
-        await screen.findByText('Otro usuario modificó el turno; se actualizó la vista.');
-        expect((screen.getByLabelText('Inicio en Nueva York') as HTMLInputElement).value).toBe('2026-11-21T09:00');
-        fireEvent.click(screen.getByRole('button', { name: 'Guardar horario' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Save shift times' }));
+        await screen.findByText('Another user changed this shift. The calendar is now up to date.');
+        expect((screen.getByLabelText('Start time (New York)') as HTMLInputElement).value).toBe('2026-11-21T09:00');
+        fireEvent.click(screen.getByRole('button', { name: 'Save shift times' }));
         await waitFor(() => expect(patch).toHaveBeenCalledTimes(2));
         expect(patch).toHaveBeenNthCalledWith(2, '/api/shifts/1/reassign',
             expect.objectContaining({ expected_updated_at: current.updated_at }), expect.anything());
@@ -202,8 +202,8 @@ describe('shift calendar', () => {
 
     it('debounces two filter changes and caches their resulting range', async () => {
         await mount();
-        fireEvent.change(screen.getByRole('combobox', { name: 'Obra' }), { target: { value: '3' } });
-        fireEvent.change(screen.getByRole('combobox', { name: 'Estado' }), { target: { value: 'programmed' } });
+        fireEvent.change(screen.getByRole('combobox', { name: 'Job site' }), { target: { value: '3' } });
+        fireEvent.change(screen.getByRole('combobox', { name: 'Status' }), { target: { value: 'programmed' } });
         await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
         expect(axios.get).toHaveBeenLastCalledWith('/api/shifts', expect.objectContaining({
             params: expect.objectContaining({ job_site_id: '3', status: 'programmed' }),
@@ -219,7 +219,7 @@ describe('shift calendar', () => {
         await waitFor(() => expect(axios.get).toHaveBeenCalledWith('/api/shifts', expect.objectContaining({
             params: expect.objectContaining({ job_site_id: '9', status: 'programmed' }),
         })));
-        expect((screen.getByRole('combobox', { name: 'Obra' }) as HTMLSelectElement).value).toBe('9');
+        expect((screen.getByRole('combobox', { name: 'Job site' }) as HTMLSelectElement).value).toBe('9');
     });
 
     it('renders a read-only calendar for a read-only account', async () => {

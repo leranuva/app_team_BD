@@ -29,9 +29,9 @@ class AttendanceOutsideGeofenceNotification extends Notification implements Shou
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Intento de fichaje fuera del radio')
-            ->line($this->attempt['worker_name'].' intentó fichar '.$this->attempt['operation'].' fuera del radio permitido.')
-            ->line('Obra: '.$this->attempt['job_site_name'])
-            ->line('Hora del intento: '.$this->attempt['attempted_at']);
+            ->subject('Time clock attempt outside the geofence')
+            ->line($this->attempt['worker_name'].' attempted to clock '.($this->attempt['operation'] === 'entrada' ? 'in' : 'out').' outside the allowed radius.')
+            ->line('Job site: '.$this->attempt['job_site_name'])
+            ->line('Attempt time: '.$this->attempt['attempted_at']);
     }
 }

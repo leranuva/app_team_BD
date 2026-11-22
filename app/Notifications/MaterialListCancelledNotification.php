@@ -33,9 +33,9 @@ class MaterialListCancelledNotification extends Notification implements ShouldQu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Lista de materiales cancelada '.$this->code)
+            ->subject('Material list canceled '.$this->code)
             ->line($this->title)
             ->line($this->reason)
-            ->action('Ver operaciones', route('dashboard'));
+            ->action('View operations', route('dashboard'));
     }
 }

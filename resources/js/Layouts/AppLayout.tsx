@@ -1,37 +1,38 @@
 import { router, usePage } from '@inertiajs/react';
 import { ReactNode, useState } from 'react';
 import { hrefWithActiveSite, readActiveSite, writeActiveSite } from '@/lib/activeSite';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 type Site = { id: number; name: string };
-type Auth = { user: { id: number; name: string; email: string } | null; role?: string | null; sites?: Site[] };
+type Auth = { user: { id: number; name: string; email: string } | null; role?: string | null; role_label?: string | null; sites?: Site[] };
 
 const workerLinks = [
-    { href: '/worker/today', label: 'Hoy' },
-    { href: '/worker/schedule', label: 'Mi semana' },
-    { href: '/worker/history', label: 'Historial' },
+    { href: '/worker/today', label: 'Today' },
+    { href: '/worker/schedule', label: 'My week' },
+    { href: '/worker/history', label: 'History' },
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/shifts/calendar', label: 'Mis turnos' },
-    { href: '/dashboard#fichaje', label: 'Fichaje' },
+    { href: '/shifts/calendar', label: 'My shifts' },
+    { href: '/dashboard#fichaje', label: 'Time clock' },
 ];
 
 const supervisorLinks = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/supervisor/team', label: 'Equipo' },
-    { href: '/supervisor/scopes', label: 'Avance' },
-    { href: '/supervisor/hours', label: 'Horas' },
-    { href: '/dashboard#obras', label: 'Mis obras' },
-    { href: '/shifts/calendar', label: 'Turnos' },
+    { href: '/supervisor/team', label: 'Team' },
+    { href: '/supervisor/scopes', label: 'Progress' },
+    { href: '/supervisor/hours', label: 'Hours' },
+    { href: '/dashboard#obras', label: 'My job sites' },
+    { href: '/shifts/calendar', label: 'Shifts' },
     { href: '/change-orders', label: 'Change Orders' },
-    { href: '/material-lists', label: 'Materiales' },
-    { href: '/dashboard#fotos', label: 'Fotos' },
+    { href: '/material-lists', label: 'Materials' },
+    { href: '/dashboard#fotos', label: 'Photos' },
 ];
 
 function linksFor(role: string | null | undefined) {
     if (role === 'Super Admin' || role === 'Administrador') {
         return [
             ...supervisorLinks,
-            { href: '/admin/materials', label: 'Catálogo de materiales' },
-            { href: '/admin', label: 'Filament', external: true },
+            { href: '/admin/materials', label: 'Material catalog' },
+            { href: '/admin', label: 'Administration', external: true },
         ];
     }
     if (role === 'Supervisor') {
@@ -50,6 +51,25 @@ export default function AppLayout({ header, children }: { header?: ReactNode; ch
     const [collapsed, setCollapsed] = useState(false);
     const [open, setOpen] = useState(false);
     const [siteId, setSiteId] = useState(readActiveSite);
+    const currentPath = page.url.split(/[?#]/)[0];
+    const initials = auth.user?.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+
+    function navigationLink(item: (typeof items)[number], compact = false) {
+        const external = 'external' in item;
+        const active = !external && !item.href.includes('#')
+            && (currentPath === item.href || currentPath.startsWith(item.href + '/'));
+
+        return (
+            <a key={item.href} href={external ? item.href : hrefWithActiveSite(item.href, siteId)}
+                {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                aria-current={active ? 'page' : undefined} title={item.label}
+                className="workspace-link">
+                {compact ? <span aria-hidden="true">{item.label.slice(0, 2)}</span> : item.label}
+                {compact && <span className="sr-only">{item.label}</span>}
+                {external && !compact && <span aria-hidden="true" className="ml-auto">↗</span>}
+            </a>
+        );
+    }
 
     function chooseSite(id: string) {
         setSiteId(id);
@@ -64,51 +84,51 @@ export default function AppLayout({ header, children }: { header?: ReactNode; ch
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 text-slate-950">
-            <aside className={`fixed inset-y-0 left-0 z-30 hidden border-r border-slate-200 bg-white md:flex md:flex-col ${collapsed ? 'md:w-20' : 'md:w-64'}`}>
-                <div className="flex items-center justify-between px-4 py-4">
-                    {!collapsed && <span className="text-sm font-semibold">Logística</span>}
-                    <button type="button" className="min-h-12 min-w-12 rounded-lg text-sm font-semibold" aria-expanded={!collapsed} aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'} onClick={() => setCollapsed((value) => !value)}>
+        <div className="workspace min-h-screen text-slate-950">
+            <a href="#workspace-content" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:bg-white focus:p-3">Skip to content</a>
+            <aside className={`workspace-sidebar fixed inset-y-0 left-0 z-30 hidden md:flex md:flex-col ${collapsed ? 'md:w-20' : 'md:w-64'}`}>
+                <div className="flex min-h-20 items-center justify-center gap-2 px-3">
+                    {!collapsed && <a href="/dashboard" className="brand-lockup mr-auto">
+                        <ApplicationLogo className="brand-mark" />
+                    </a>}
+                    <button type="button" className="workspace-menu-toggle" aria-expanded={!collapsed} aria-label={collapsed ? 'Expand menu' : 'Collapse menu'} onClick={() => setCollapsed((value) => !value)}>
                         {collapsed ? '»' : '«'}
                     </button>
                 </div>
-                <nav aria-label="Principal" className="flex flex-1 flex-col gap-1 px-2">
-                    {items.map((item) => (
-                        <a key={item.label} href={'external' in item ? item.href : hrefWithActiveSite(item.href, siteId)} {...('external' in item ? { target: '_blank', rel: 'noreferrer' } : {})} className="flex min-h-12 items-center rounded-lg px-3 text-sm font-semibold hover:bg-slate-100">
-                            {collapsed ? item.label.slice(0, 1) : item.label}
-                        </a>
-                    ))}
+                <nav aria-label="Main" className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+                    {items.map((item) => navigationLink(item, collapsed))}
                 </nav>
             </aside>
             <div className={collapsed ? 'md:pl-20' : 'md:pl-64'}>
-                <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
-                    <div>
-                        <p className="font-semibold">{auth.user?.name ?? 'Invitado'}</p>
-                        {role && <span className="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-950">{role}</span>}
+                <header className="workspace-topbar flex min-h-20 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-8">
+                    <div className="flex items-center gap-3">
+                        <span className="workspace-avatar" aria-hidden="true">{initials || 'LO'}</span>
+                        <div>
+                        <p className="font-semibold">{auth.user?.name ?? 'Guest'}</p>
+                        {role && <p className="text-xs font-medium text-slate-600">{auth.role_label ?? role}</p>}
+                        </div>
                     </div>
                     {sites.length > 1 && (
-                        <label className="text-sm font-semibold">Obra activa
-                            <select aria-label="Obra activa" className="ml-2 min-h-12 rounded-lg border-slate-300" value={siteId} onChange={(event) => chooseSite(event.target.value)}>
-                                <option value="">Todas</option>
+                        <label className="text-sm font-semibold">Active job site
+                            <select aria-label="Active job site" className="ml-2 min-h-12 rounded-lg border-slate-300" value={siteId} onChange={(event) => chooseSite(event.target.value)}>
+                                <option value="">All</option>
                                 {sites.map((site) => <option key={site.id} value={String(site.id)}>{site.name}</option>)}
                             </select>
                         </label>
                     )}
-                    <button type="button" className="min-h-12 rounded-lg border px-3 text-sm font-semibold md:hidden" aria-expanded={open} aria-label="Abrir menú de perfil" onClick={() => setOpen((value) => !value)}>Perfil</button>
+                    <button type="button" className="min-h-12 rounded-lg border px-3 text-sm font-semibold md:hidden" aria-expanded={open} aria-label="Open profile menu" onClick={() => setOpen((value) => !value)}>Profile</button>
                     <div className={`${open ? 'flex' : 'hidden'} w-full flex-col gap-2 md:flex md:w-auto md:flex-row`}>
-                        <a href="/profile" className="inline-flex min-h-12 items-center text-sm font-semibold">Perfil</a>
-                        <button type="button" className="min-h-12 text-left text-sm font-semibold" onClick={() => router.post('/logout')}>Cerrar sesión</button>
+                        <a href="/profile" className="inline-flex min-h-12 items-center text-sm font-semibold">Profile</a>
+                        <button type="button" className="min-h-12 text-left text-sm font-semibold" onClick={() => router.post('/logout')}>Sign out</button>
                     </div>
                 </header>
-                {header && <div className="border-b border-slate-200 bg-white px-4 py-4">{header}</div>}
-                <div className="pb-24 md:pb-8">{children}</div>
+                <main id="workspace-content" tabIndex={-1} className="workspace-content pb-24 md:pb-8">
+                    {header && <div className="workspace-page-heading px-4 sm:px-8">{header}</div>}
+                    {children}
+                </main>
             </div>
-            <nav aria-label="Móvil" className="fixed inset-x-0 bottom-0 z-30 flex gap-1 overflow-x-auto border-t border-slate-200 bg-white p-2 md:hidden">
-                {items.filter((item) => !('external' in item)).map((item) => (
-                    <a key={item.label} href={hrefWithActiveSite(item.href, siteId)} className="inline-flex min-h-12 shrink-0 items-center rounded-lg px-3 text-sm font-semibold">
-                        {item.label}
-                    </a>
-                ))}
+            <nav aria-label="Mobile" className="workspace-mobile fixed inset-x-0 bottom-0 z-30 flex gap-1 overflow-x-auto p-2 md:hidden">
+                {items.map((item) => navigationLink(item))}
             </nav>
         </div>
     );

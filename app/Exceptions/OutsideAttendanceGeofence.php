@@ -10,7 +10,7 @@ class OutsideAttendanceGeofence extends ValidationException
     public function __construct(public readonly int $siteId)
     {
         $validator = Validator::make([], []);
-        $validator->errors()->add('location', 'El fichaje está fuera del radio permitido de la obra.');
+        $validator->errors()->add('location', 'The time entry is outside the allowed job site radius.');
 
         parent::__construct($validator);
     }

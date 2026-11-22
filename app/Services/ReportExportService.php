@@ -27,7 +27,7 @@ class ReportExportService
     {
         $actor ??= Auth::user();
         if (! $actor instanceof User) {
-            throw new InvalidArgumentException('El reporte necesita un usuario.');
+            throw new InvalidArgumentException('A user is required to generate the report.');
         }
 
         $filters['actor_id'] = $actor->id;
@@ -68,7 +68,7 @@ class ReportExportService
     {
         $actor ??= Auth::user();
         if (! $actor instanceof User) {
-            throw new InvalidArgumentException('El reporte necesita un usuario.');
+            throw new InvalidArgumentException('A user is required to generate the report.');
         }
 
         $path = (string) Str::uuid().'.pdf';

@@ -22,7 +22,7 @@ class HoursByEmployeeExport implements FromCollection, ShouldAutoSize, WithHeadi
 
     public function headings(): array
     {
-        return ['Trabajador', 'Rol', 'Obra', 'Semana', 'Horas regulares', 'Horas extra', 'Doble tiempo', 'Total', 'Costo (USD)'];
+        return ['Worker', 'Role', 'Job site', 'Week', 'Regular hours', 'Overtime', 'Double time', 'Total', 'Cost (USD)'];
     }
 
     /**

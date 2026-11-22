@@ -2,7 +2,7 @@
     <table class="w-full text-left text-sm">
         <thead class="bg-gray-50 text-gray-700 dark:bg-white/5 dark:text-gray-200">
             <tr>
-                @foreach (['Código', 'Título', 'Obra', 'Scope', 'Solicitado por', 'Estado', 'Monto', 'Días de impacto', 'Fecha de envío'] as $heading)
+                @foreach (['Code', 'Title', 'Job site', 'Scope', 'Requested by', 'Status', 'Amount', 'Schedule impact (days)', 'Submitted on'] as $heading)
                     <th class="px-3 py-2 font-medium">{{ $heading }}</th>
                 @endforeach
             </tr>
@@ -15,7 +15,7 @@
                     @endforeach
                 </tr>
             @empty
-                <tr><td class="px-3 py-4" colspan="9">No hay change orders pendientes.</td></tr>
+                <tr><td class="px-3 py-4" colspan="9">No pending change orders.</td></tr>
             @endforelse
         </tbody>
     </table>

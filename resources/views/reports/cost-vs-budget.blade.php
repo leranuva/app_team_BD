@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <style>
@@ -16,17 +16,17 @@
 </head>
 <body>
     <h1>{{ config('app.name') }}</h1>
-    <p>Costo real vs. presupuestado</p>
-    <p>Generado {{ $generated_at->format('Y-m-d H:i') }} ({{ config('app.business_timezone') }}). Rango: {{ $range_label }}.</p>
+    <p>Actual vs. budgeted cost</p>
+    <p>Generated {{ $generated_at->format('Y-m-d H:i') }} ({{ config('app.business_timezone') }}). Date range: {{ $range_label }}.</p>
     <table>
         <thead>
             <tr>
-                <th>Nombre</th>
-                <th>Cliente</th>
-                <th>Presupuesto</th>
-                <th>Costo real</th>
-                <th>Diferencia</th>
-                <th>% Ejecutado</th>
+                <th>Name</th>
+                <th>Client</th>
+                <th>Budget</th>
+                <th>Actual cost</th>
+                <th>Difference</th>
+                <th>% of budget used</th>
             </tr>
         </thead>
         <tbody>
@@ -34,16 +34,16 @@
                 <tr>
                     <td>{{ $site['name'] }}</td>
                     <td>{{ $site['client'] }}</td>
-                    <td>{{ $site['budget'] ?? 'sin presupuesto' }}</td>
+                    <td>{{ $site['budget'] ?? 'No budget' }}</td>
                     <td>{{ $site['real_cost'] }}</td>
                     <td>{{ $site['difference'] }}</td>
-                    <td>{{ $site['percent_executed'] ?? 'sin presupuesto' }}</td>
+                    <td>{{ $site['percent_executed'] ?? 'No budget' }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2">Totales</td>
+                <td colspan="2">Totals</td>
                 <td>{{ $totals['budget'] }}</td>
                 <td>{{ $totals['real_cost'] }}</td>
                 <td>{{ $totals['difference'] }}</td>
@@ -52,8 +52,8 @@
         </tfoot>
     </table>
     @if ($unpriced_items > 0)
-        <p>{{ $unpriced_items }} ítems sin costo registrado. No suman al costo real.</p>
+        <p>{{ trans_choice(':count item was excluded from actual cost because it has no recorded price.|:count items were excluded from actual cost because they have no recorded price.', $unpriced_items) }}</p>
     @endif
-    <p>Los sitios sin presupuesto base no tienen porcentaje ejecutado.</p>
+    <p>Budget usage is unavailable for job sites without a base budget.</p>
 </body>
 </html>

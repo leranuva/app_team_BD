@@ -52,6 +52,7 @@ class ShiftPolicy
         }
 
         return $query->where('status', '!=', ShiftStatus::Cancelled->value)
+            ->where('is_unscheduled', false)
             ->whereHas('user', fn (Builder $workers) => $workers->active()
                 ->whereHas('jobSites', fn (Builder $sites) => $sites
                     ->withoutGlobalScope(LogisticsVisibilityScope::class)

@@ -2,7 +2,7 @@
 
 return [
     'clock_in_window_minutes' => 30,
-    'clock_out_window_minutes' => 30,
+    'clock_out_window_minutes' => null, // Record the actual departure, including early transfers.
     'max_accuracy_meters' => 100,
     'max_sample_age_seconds' => 120,
     'workweek_starts_on' => 1, // ISO weekday: Monday.

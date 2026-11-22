@@ -70,7 +70,7 @@ it('exports materials under the consumption threshold and hides other sites', fu
     expect(collect($sheet)->pluck('material')->all())->toBe(['CEM Cemento', 'ARE Arena'])
         ->and($stored['url'])->not->toBe('');
 
-    Livewire::test(LowConsumptionMaterials::class)->assertSee('Cemento')->assertDontSee('Ladrillo')->callAction('export')->assertNotified('Reporte listo');
+    Livewire::test(LowConsumptionMaterials::class)->assertSee('Cemento')->assertDontSee('Ladrillo')->callAction('export')->assertNotified('Report ready');
     $this->actingAs($this->carpenter);
     Livewire::test(LowConsumptionMaterials::class)->assertForbidden();
 });
@@ -94,10 +94,10 @@ it('exports pending change orders and leaves drafts out', function (): void {
     Storage::fake('exports');
     $stored = app(ReportExportService::class)->exportExcel(PendingChangeOrdersExport::class, [], $this->admin);
     $sheet = Excel::toArray(new SheetHeadingImport, $stored['path'], 'exports')[0];
-    expect(collect($sheet)->pluck('codigo')->sort()->values()->all())->toBe(['CO-1', 'CO-2'])
-        ->and((string) collect($sheet)->firstWhere('codigo', 'CO-1')['monto'])->toBe('-25');
+    expect(collect($sheet)->pluck('code')->sort()->values()->all())->toBe(['CO-1', 'CO-2'])
+        ->and((string) collect($sheet)->firstWhere('code', 'CO-1')['amount'])->toBe('-25');
 
-    Livewire::test(PendingChangeOrders::class)->assertSee('CO-1')->assertDontSee('CO-3')->callAction('export')->assertNotified('Reporte listo');
+    Livewire::test(PendingChangeOrders::class)->assertSee('CO-1')->assertDontSee('CO-3')->callAction('export')->assertNotified('Report ready');
     $this->actingAs($this->carpenter);
     Livewire::test(PendingChangeOrders::class)->assertForbidden();
 });
@@ -109,7 +109,7 @@ it('compares real cost with the site budget and notes missing prices', function 
     foreach ([[$this->site, $this->scope, 150000], [$bronx, null, 50000], [$soho, null, 10000]] as [$site, $scope, $cents]) {
         ChangeOrder::factory()->approved()->create([
             'job_site_id' => $site->id,
-            'job_scope_id' => $scope?->id ?? JobScope::query()->create(['job_site_id' => $site->id, 'name' => 'Alcance'])->id,
+            'job_scope_id' => $scope?->id ?? JobScope::query()->create(['job_site_id' => $site->id, 'name' => 'Scope'])->id,
             'created_by' => $this->admin->id,
             'amount_cents' => $cents,
         ]);
@@ -141,14 +141,14 @@ it('compares real cost with the site budget and notes missing prices', function 
         ->and(collect(app(ReportQueryService::class)->costVsBudget($this->outsider, [])['sites'])->pluck('name'))->not->toContain('Queens');
 
     $html = view('reports.cost-vs-budget', $report)->render();
-    expect($html)->toContain('Queens')->toContain('1550.00')->toContain('sin presupuesto')->toContain('1 ítems sin costo registrado');
+    expect($html)->toContain('Queens')->toContain('1550.00')->toContain('No budget')->toContain('1 item was excluded');
 
     Storage::fake('exports');
     $stored = app(ReportExportService::class)->exportPdf('reports.cost-vs-budget', $report, 'costo.pdf', $this->admin);
     expect(Storage::disk('exports')->get($stored['path']))->toStartWith('%PDF')
         ->and(strlen(Storage::disk('exports')->get($stored['path'])))->toBeGreaterThan(100);
 
-    Livewire::test(CostVsBudget::class)->assertSee('Queens')->callAction('export')->assertNotified('Reporte listo');
+    Livewire::test(CostVsBudget::class)->assertSee('Queens')->callAction('export')->assertNotified('Report ready');
     $this->actingAs($this->carpenter);
     Livewire::test(CostVsBudget::class)->assertForbidden();
 });
@@ -220,8 +220,8 @@ it('renders the report widgets from the same queries', function (): void {
     ]);
 
     Livewire::test(HoursThisWeekWidget::class)->assertSee('Queens')->assertSee('8.00')->assertSee('1.00');
-    Livewire::test(PendingApprovalsWidget::class)->assertSee('Change orders pendientes')->assertSee('Listas pendientes');
-    Livewire::test(LowConsumptionWidget::class)->assertSee('Cemento')->assertSee('Ver reporte');
+    Livewire::test(PendingApprovalsWidget::class)->assertSee('Pending change orders')->assertSee('Pending lists');
+    Livewire::test(LowConsumptionWidget::class)->assertSee('Cemento')->assertSee('View report');
     expect($list->status->value)->toBe('submitted');
 });
 

@@ -108,7 +108,7 @@ class MaterialListService
     {
         $saved = $this->transition($list, $actor, MaterialListStatus::Submitted, function (MaterialList $record): void {
             if (! $record->items()->exists()) {
-                throw ValidationException::withMessages(['items' => 'La lista necesita al menos un material.']);
+                throw ValidationException::withMessages(['items' => 'The list must contain at least one material.']);
             }
         });
         $this->notifySubmitted($saved);
@@ -163,7 +163,7 @@ class MaterialListService
             if ($to !== null && $to !== $record->status) {
                 $this->machine->assertAvailable($record->status, $to);
                 if (! $this->machine->actorMay($record->status, $to, $actor, $record)) {
-                    throw new AuthorizationException('No puedes registrar este consumo.');
+                    throw new AuthorizationException('You cannot record usage for this list.');
                 }
                 $record->status = $to;
                 if ($to === MaterialListStatus::Consumed) {
@@ -180,7 +180,7 @@ class MaterialListService
     {
         $reason = trim($reason);
         if ($reason === '') {
-            throw ValidationException::withMessages(['reason' => 'Indica el motivo.']);
+            throw ValidationException::withMessages(['reason' => 'Enter a reason.']);
         }
 
         $saved = $this->transition($list, $actor, MaterialListStatus::Cancelled, function (MaterialList $record, User $actor) use ($reason): void {
@@ -246,7 +246,7 @@ class MaterialListService
         $ids = array_map(fn (array $item): int => (int) $item['material_id'], $items);
         $active = Material::query()->whereIn('id', $ids)->where('is_active', true)->pluck('id');
         if ($active->count() !== count(array_unique($ids))) {
-            throw ValidationException::withMessages(['items' => 'Cada material debe existir y estar activo.']);
+            throw ValidationException::withMessages(['items' => 'Each material must exist and be active.']);
         }
     }
 
@@ -256,19 +256,19 @@ class MaterialListService
     private function applyQuantities(MaterialList $list, array $quantities, string $column, string $limitColumn, bool $confirm): void
     {
         if ($quantities === []) {
-            throw ValidationException::withMessages([$column => 'Indica las cantidades.']);
+            throw ValidationException::withMessages([$column => 'Enter the quantities.']);
         }
 
         foreach ($list->items as $item) {
             if (! array_key_exists($item->id, $quantities) && ! array_key_exists((string) $item->id, $quantities)) {
-                throw ValidationException::withMessages([$column => 'Falta la cantidad de un material.']);
+                throw ValidationException::withMessages([$column => 'A material quantity is missing.']);
             }
             $quantity = $quantities[$item->id] ?? $quantities[(string) $item->id];
             $this->assertQuantity($quantity, $column);
             $limit = $item->{$limitColumn} ?? $item->requested_quantity ?? '0';
             if (! $confirm && bccomp($this->decimal($quantity), $this->decimal($limit), 3) > 0) {
                 throw ValidationException::withMessages([
-                    $column => 'La cantidad supera lo permitido. Confirma para registrarla igual.',
+                    $column => 'The quantity exceeds the allowed amount. Confirm to record it anyway.',
                 ]);
             }
             $item->forceFill([$column => $this->decimal($quantity)])->save();
@@ -278,7 +278,7 @@ class MaterialListService
     private function assertQuantity(mixed $quantity, string $field): void
     {
         if (! is_numeric($quantity) || (float) $quantity < 0) {
-            throw ValidationException::withMessages([$field => 'La cantidad no puede ser negativa.']);
+            throw ValidationException::withMessages([$field => 'Quantity cannot be negative.']);
         }
     }
 

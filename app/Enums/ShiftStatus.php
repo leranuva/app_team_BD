@@ -12,10 +12,10 @@ enum ShiftStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Programmed => 'Programado',
-            self::Confirmed => 'Confirmado',
-            self::Completed => 'Completado',
-            self::Cancelled => 'Cancelado',
+            self::Programmed => 'Scheduled',
+            self::Confirmed => 'Confirmed',
+            self::Completed => 'Completed',
+            self::Cancelled => 'Canceled',
         };
     }
 

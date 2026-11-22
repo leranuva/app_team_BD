@@ -29,9 +29,9 @@ class ChangeOrderApprovedNotification extends Notification implements ShouldQueu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Orden de cambio aprobada '.$this->code)
+            ->subject('Change order approved '.$this->code)
             ->line($this->title)
-            ->line('La orden fue aprobada y su impacto quedó aplicado.')
-            ->action('Ver operaciones', route('dashboard'));
+            ->line('The change order was approved and its impact was applied.')
+            ->action('View operations', route('dashboard'));
     }
 }

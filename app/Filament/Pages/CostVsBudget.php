@@ -23,11 +23,11 @@ class CostVsBudget extends Page
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reportes';
+    protected static string|UnitEnum|null $navigationGroup = 'Reports';
 
-    protected static ?string $navigationLabel = 'Costo real vs. presupuestado';
+    protected static ?string $navigationLabel = 'Actual vs. budgeted cost';
 
-    protected static ?string $title = 'Costo real vs. presupuestado';
+    protected static ?string $title = 'Actual vs. budgeted cost';
 
     protected static ?int $navigationSort = 40;
 
@@ -40,10 +40,10 @@ class CostVsBudget extends Page
     {
         return $schema->components([
             Form::make([
-                Select::make('job_site_id')->label('Obra')->placeholder('Todas las obras visibles')
+                Select::make('job_site_id')->label('Job site')->placeholder('All visible job sites')
                     ->options(fn (): array => $this->siteOptions())->searchable(),
-                DatePicker::make('from')->label('Desde')->native(false),
-                DatePicker::make('until')->label('Hasta')->native(false),
+                DatePicker::make('from')->label('From')->native(false),
+                DatePicker::make('until')->label('To')->native(false),
             ])->statePath('filters')->columns(3)->live(),
             View::make('filament.reports.cost-vs-budget')
                 ->viewData(fn (): array => ['report' => $this->report()]),
@@ -53,7 +53,7 @@ class CostVsBudget extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('export')->label('Descargar PDF')->action(function (): void {
+            Action::make('export')->label('Download PDF')->action(function (): void {
                 $report = $this->report();
                 $this->notifyExport(app(ReportExportService::class)->exportPdf(
                     'reports.cost-vs-budget',

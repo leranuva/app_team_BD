@@ -28,6 +28,6 @@ class GenerateReportExport implements ShouldQueue
     {
         $user = User::query()->findOrFail($this->userId);
         $stored = $exports->storeExcel($user, $this->exportClass, $this->filters);
-        $user->notify(new ReportReadyNotification($stored['url'], 'Reporte Excel'));
+        $user->notify(new ReportReadyNotification($stored['url'], 'Excel report'));
     }
 }

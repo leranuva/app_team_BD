@@ -15,7 +15,9 @@ class PunchAttendanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shift_id' => ['required', 'integer', 'min:1'],
+            'shift_id' => [$this->routeIs('api.attendances.clock-out') ? 'required' : 'required_without:job_site_id',
+                'integer', 'min:1', 'prohibits:job_site_id'],
+            'job_site_id' => ['sometimes', 'integer', 'min:1'],
             'lat' => ['required', 'numeric', 'between:-90,90'],
             'lng' => ['required', 'numeric', 'between:-180,180'],
             'accuracy' => ['required', 'numeric', 'between:0,9999999999.99'],

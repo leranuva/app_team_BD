@@ -10,7 +10,7 @@ class ScopesRelationManager extends RelationManager
 {
     protected static string $relationship = 'scopes';
 
-    protected static ?string $title = 'Alcances';
+    protected static ?string $title = 'Scopes';
 
     public function isReadOnly(): bool
     {
@@ -20,9 +20,9 @@ class ScopesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('name')->label('Alcance'),
-            TextColumn::make('status')->label('Estado')->badge(),
-            TextColumn::make('progress')->label('Avance')->suffix('%'),
+            TextColumn::make('name')->label('Scope'),
+            TextColumn::make('status')->label('Status')->badge(),
+            TextColumn::make('progress')->label('Progress')->suffix('%'),
         ]);
     }
 }

@@ -8,9 +8,8 @@ use App\Models\ScopePhoto;
 use App\Models\User;
 
 /**
- * Carpintero y Ayudante no consultan ni modifican fotos. La membresía del supervisor
- * se comprueba en job_site_user, a través de JobScope::visibleTo(). Nadie puede borrar
- * una foto: el historial se conserva archivándola.
+ * Carpenters and helpers cannot read or edit photos. Supervisor membership is
+ * checked through JobScope::visibleTo(). Archiving preserves photo history.
  */
 class ScopePhotoPolicy
 {

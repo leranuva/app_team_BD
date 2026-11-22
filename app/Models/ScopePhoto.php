@@ -41,14 +41,14 @@ class ScopePhoto extends Model
                 ->whereKey($photo->job_scope_id)->value('job_site_id');
 
             if ($siteId === null || ($photo->job_site_id !== null && (int) $photo->job_site_id !== (int) $siteId)) {
-                throw ValidationException::withMessages(['job_site_id' => 'La obra debe coincidir con la del alcance.']);
+                throw ValidationException::withMessages(['job_site_id' => 'The job site must match the scope’s job site.']);
             }
 
             $photo->job_site_id = $siteId;
         });
 
         static::deleting(function (): never {
-            throw ValidationException::withMessages(['photo' => 'Archiva la foto para conservar su historial.']);
+            throw ValidationException::withMessages(['photo' => 'Archive the photo to preserve its history.']);
         });
     }
 

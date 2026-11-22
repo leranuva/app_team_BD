@@ -30,7 +30,7 @@ class ShiftResource extends JsonResource
     {
         $timezone = config('app.business_timezone');
         $role = $this->effectiveRole();
-        $workerRole = collect(ShiftRole::cases())->first(fn (ShiftRole $candidate) => $this->worker?->hasRole($candidate->label()));
+        $workerRole = collect(ShiftRole::cases())->first(fn (ShiftRole $candidate) => $this->worker?->hasRole($candidate->logisticsRole()->value));
         $titleRole = $workerRole ?? $role;
 
         return [

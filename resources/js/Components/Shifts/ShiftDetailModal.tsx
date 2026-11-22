@@ -30,7 +30,7 @@ export default function ShiftDetailModal({ event, zone, canEdit, touch, pending,
         setEnd(inputTime(event.end, zone));
         setError('');
     }, [event.start, event.end, event.updated_at, zone]);
-    const format = (value: string) => DateTime.fromISO(value, { zone }).setLocale('es').toLocaleString(DateTime.DATETIME_MED);
+    const format = (value: string) => DateTime.fromISO(value, { zone }).setLocale('en-US').toLocaleString(DateTime.DATETIME_MED);
 
     return (
         <Dialog open onClose={() => { if (!pending) onClose(); }} className="relative z-50">
@@ -38,20 +38,20 @@ export default function ShiftDetailModal({ event, zone, canEdit, touch, pending,
             <div className="fixed inset-0 overflow-y-auto p-4 sm:p-8">
                 <div className="flex min-h-full items-center justify-center">
                     <DialogPanel className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-7">
-                        <Toaster id="shift-modal" containerAriaLabel="Avisos de edición del turno" />
+                        <Toaster id="shift-modal" containerAriaLabel="Shift editing notifications" />
                         <DialogTitle className="text-xl font-semibold text-slate-950">{event.title}</DialogTitle>
                         <p className="mt-2 text-sm text-slate-700">{format(event.start)} – {format(event.end)}</p>
                         <dl className="mt-5 grid gap-3 text-sm text-slate-700">
-                            <div><dt className="font-semibold">Obra</dt><dd>{event.job_site?.name ?? '—'}</dd>
+                            <div><dt className="font-semibold">Job site</dt><dd>{event.job_site?.name ?? '—'}</dd>
                                 {event.job_site?.address && <dd><a className="underline" target="_blank" rel="noreferrer" href={'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(event.job_site.address)}>{event.job_site.address}</a></dd>}
                             </div>
-                            {event.job_scope && <div><dt className="font-semibold">Alcance</dt><dd>{event.job_scope.name}</dd></div>}
+                            {event.job_scope && <div><dt className="font-semibold">Scope</dt><dd>{event.job_scope.name}</dd></div>}
                             {event.supervisor_name && <div><dt className="font-semibold">Supervisor</dt><dd>{event.supervisor_name}</dd></div>}
-                            <div><dt className="font-semibold">Trabajador</dt><dd>{event.worker?.name ?? '—'}</dd></div>
-                            <div><dt className="font-semibold">Rol requerido</dt><dd>{roleLabel}</dd></div>
-                            <div><dt className="font-semibold">Estado</dt><dd>{statusLabel}</dd></div>
-                            {event.notes && <div><dt className="font-semibold">Notas</dt><dd className="whitespace-pre-wrap">{event.notes}</dd></div>}
-                            {event.updated_at && <div><dt className="font-semibold">Última actualización</dt><dd>{format(event.updated_at)}</dd></div>}
+                            <div><dt className="font-semibold">Worker</dt><dd>{event.worker?.name ?? '—'}</dd></div>
+                            <div><dt className="font-semibold">Required role</dt><dd>{roleLabel}</dd></div>
+                            <div><dt className="font-semibold">Status</dt><dd>{statusLabel}</dd></div>
+                            {event.notes && <div><dt className="font-semibold">Notes</dt><dd className="whitespace-pre-wrap">{event.notes}</dd></div>}
+                            {event.updated_at && <div><dt className="font-semibold">Last updated</dt><dd>{format(event.updated_at)}</dd></div>}
                         </dl>
                         {editing && canEdit && (
                             <form id="shift-time-form" className="mt-5 grid gap-3" onSubmit={async (submit) => {
@@ -59,26 +59,26 @@ export default function ShiftDetailModal({ event, zone, canEdit, touch, pending,
                                 const from = toOffset(start, event.start, zone);
                                 const to = toOffset(end, event.end, zone);
                                 if (!from || !to) {
-                                    setError('Selecciona una fecha y hora válidas en Nueva York.');
+                                    setError('Enter a valid New York date and time.');
                                     return;
                                 }
                                 setError('');
                                 if (await onSave(from, to)) setEditing(false);
                             }}>
-                                <label className="grid gap-1 text-sm font-medium">Inicio en Nueva York
+                                <label className="grid gap-1 text-sm font-medium">Start time (New York)
                                     <input required type="datetime-local" className="min-h-11 rounded-lg border-slate-300" value={start} onChange={(e) => setStart(e.target.value)} />
                                 </label>
-                                <label className="grid gap-1 text-sm font-medium">Fin en Nueva York
+                                <label className="grid gap-1 text-sm font-medium">End time (New York)
                                     <input required type="datetime-local" className="min-h-11 rounded-lg border-slate-300" value={end} onChange={(e) => setEnd(e.target.value)} />
                                 </label>
                                 {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
                             </form>
                         )}
                         <div className="mt-6 flex flex-wrap justify-end gap-3">
-                            <button type="button" disabled={pending} onClick={onClose} className="min-h-11 rounded-lg border border-slate-300 px-4">Cerrar</button>
+                            <button type="button" disabled={pending} onClick={onClose} className="min-h-11 rounded-lg border border-slate-300 px-4">Close</button>
                             {canEdit && (editing
-                                ? <button type="submit" form="shift-time-form" disabled={pending} className="min-h-11 rounded-lg bg-slate-900 px-4 text-white disabled:opacity-60">{pending ? 'Guardando…' : 'Guardar horario'}</button>
-                                : <button type="button" onClick={() => setEditing(true)} className="min-h-11 rounded-lg bg-slate-900 px-4 text-white">Editar horario</button>)}
+                                ? <button type="submit" form="shift-time-form" disabled={pending} className="min-h-11 rounded-lg bg-slate-900 px-4 text-white disabled:opacity-60">{pending ? 'Saving…' : 'Save shift times'}</button>
+                                : <button type="button" onClick={() => setEditing(true)} className="min-h-11 rounded-lg bg-slate-900 px-4 text-white">Edit shift times</button>)}
                         </div>
                     </DialogPanel>
                 </div>

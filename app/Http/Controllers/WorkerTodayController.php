@@ -24,7 +24,7 @@ class WorkerTodayController extends Controller
         $start = CarbonImmutable::now($zone)->startOfDay();
         $end = $start->addDay();
 
-        $shift = Shift::forUser($user)->where('user_id', $user->id)
+        $shifts = Shift::forUser($user)->where('user_id', $user->id)
             ->where('starts_at', '<', $end->utc())
             ->where('ends_at', '>', $start->utc())
             ->where('status', '!=', ShiftStatus::Cancelled->value)
@@ -33,15 +33,20 @@ class WorkerTodayController extends Controller
                 'requiredRole:id,name',
                 'jobScope' => fn ($scope) => $scope->withoutGlobalScope(LogisticsVisibilityScope::class)->select('id', 'name', 'supervisor_id'),
                 'jobScope.supervisor:id,name',
+                'attendance:id,shift_id,clocked_in_at,clocked_out_at',
             ])
             ->orderBy('starts_at')
-            ->first();
+            ->get();
+
+        $materialsByScope = $shifts->whereNotNull('job_scope_id')->unique('job_scope_id')
+            ->mapWithKeys(fn (Shift $shift): array => [$shift->job_scope_id => $this->materials($user->id, $shift)]);
 
         return Inertia::render('Worker/Today', [
             'timeZone' => $zone,
             'clock' => $clock->for($user),
-            'shift' => $shift === null ? null : $this->shiftPayload($shift),
-            'materials' => $shift === null ? [] : $this->materials($user->id, $shift),
+            'shifts' => $shifts->map(fn (Shift $shift): array => $this->shiftPayload($shift) + [
+                'materials' => $materialsByScope->get($shift->job_scope_id, []),
+            ])->all(),
         ]);
     }
 
@@ -59,6 +64,7 @@ class WorkerTodayController extends Controller
             'ends_at' => $shift->ends_at->setTimezone($zone)->toIso8601String(),
             'role_required' => $shift->effectiveRole()?->label(),
             'notes' => $shift->notes,
+            'is_unscheduled' => $shift->is_unscheduled,
             'job_site' => [
                 'name' => $shift->jobSite?->name,
                 'address' => $address,
@@ -68,6 +74,8 @@ class WorkerTodayController extends Controller
             ],
             'job_scope' => $shift->jobScope?->only(['id', 'name']),
             'supervisor' => $shift->jobScope?->supervisor?->name,
+            'clocked_in_at' => $shift->attendance?->clocked_in_at?->setTimezone($zone)->toIso8601String(),
+            'clocked_out_at' => $shift->attendance?->clocked_out_at?->setTimezone($zone)->toIso8601String(),
         ];
     }
 

@@ -9,5 +9,5 @@ type Options = {
 };
 
 export default function Schedule({ options, timeZone }: { options: Options; timeZone: string }) {
-    return <Calendar options={options} canEdit={false} timeZone={timeZone} title="Mi semana" />;
+    return <Calendar options={options} canEdit={false} timeZone={timeZone} title="My week" />;
 }

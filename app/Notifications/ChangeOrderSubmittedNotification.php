@@ -29,9 +29,9 @@ class ChangeOrderSubmittedNotification extends Notification implements ShouldQue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Orden de cambio enviada '.$this->code)
+            ->subject('Change order submitted '.$this->code)
             ->line($this->title)
-            ->line('La orden quedó enviada y espera revisión.')
-            ->action('Ver operaciones', route('dashboard'));
+            ->line('The change order was submitted and is awaiting review.')
+            ->action('View operations', route('dashboard'));
     }
 }

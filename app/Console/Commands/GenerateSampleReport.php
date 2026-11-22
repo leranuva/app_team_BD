@@ -19,7 +19,7 @@ class GenerateSampleReport extends Command
         $generatedAt = now(config('app.business_timezone'));
         $rows = collect([[
             'worker' => 'Ana Torres',
-            'role' => 'Carpintero',
+            'role' => 'Carpenter',
             'site' => 'Queens',
             'week' => '2026-11-23',
             'regular_hours' => '8.00',

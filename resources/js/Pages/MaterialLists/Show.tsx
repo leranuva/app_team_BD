@@ -37,8 +37,8 @@ export type MaterialListDetail = {
 };
 
 const labels: Record<string, string> = {
-    draft: 'Borrador', submitted: 'Enviada', approved: 'Aprobada', ordered: 'Ordenada',
-    delivered: 'Entregada', partially_consumed: 'Consumo parcial', consumed: 'Consumida', cancelled: 'Cancelada',
+    draft: 'Draft', submitted: 'Submitted', approved: 'Approved', ordered: 'Ordered',
+    delivered: 'Delivered', partially_consumed: 'Partially consumed', consumed: 'Consumed', cancelled: 'Canceled',
 };
 
 const toaster = { toasterId: 'material-lists' } as const;
@@ -66,12 +66,12 @@ export default function Show({ list }: { list: MaterialListDetail }) {
         setBusy(true);
         try {
             await axios.post(`/api/material-lists/${list.id}/${path}`, body, { headers: { Accept: 'application/json' } });
-            toast.success('Lista actualizada', toaster);
+            toast.success('List updated', toaster);
             setDialog(null);
             setReason('');
             router.reload();
         } catch (error) {
-            const message = axios.isAxiosError(error) ? error.response?.data?.message ?? 'No se pudo actualizar la lista.' : 'No se pudo actualizar la lista.';
+            const message = axios.isAxiosError(error) ? error.response?.data?.message ?? 'Could not update the list.' : 'Could not update the list.';
             toast.error(message, toaster);
         } finally {
             setBusy(false);
@@ -94,15 +94,15 @@ export default function Show({ list }: { list: MaterialListDetail }) {
     }
 
     const timeline = [
-        ['Ordenada', list.ordered_at],
-        ['Entregada', list.delivered_at],
-        ['Consumida', list.consumed_at],
+        ['Ordered', list.ordered_at],
+        ['Delivered', list.delivered_at],
+        ['Consumed', list.consumed_at],
     ].filter((entry) => entry[1]);
 
     return (
         <AppLayout>
-            <Head title={list.code ?? 'Lista de materiales'} />
-            <Toaster id="material-lists" containerAriaLabel="Avisos de listas de materiales" />
+            <Head title={list.code ?? 'Material list'} />
+            <Toaster id="material-lists" containerAriaLabel="Material list notifications" />
             <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
                 <p className="text-sm text-slate-600">
                     {list.code}
@@ -111,14 +111,14 @@ export default function Show({ list }: { list: MaterialListDetail }) {
                 </p>
                 <h1 className="text-3xl font-semibold text-slate-950">{list.title}</h1>
                 <p className="mt-2"><span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-950">{labels[list.status] ?? list.status}</span></p>
-                <ol className="mt-6 space-y-2" aria-label="Línea de tiempo">
+                <ol className="mt-6 space-y-2" aria-label="Timeline">
                     {timeline.map(([label, at]) => <li key={String(label)}>{label}: {at}</li>)}
-                    {list.cancelled_reason ? <li>Cancelada: {list.cancelled_reason}</li> : null}
+                    {list.cancelled_reason ? <li>Canceled: {list.cancelled_reason}</li> : null}
                 </ol>
                 <table className="mt-6 w-full text-left text-sm">
                     <thead>
                         <tr>
-                            <th>Material</th><th>Presup.</th><th>Solicitada</th><th>Aprobada</th><th>Entregada</th><th>Consumida</th><th>Costo</th>
+                            <th>Material</th><th>Budgeted</th><th>Requested</th><th>Approved</th><th>Delivered</th><th>Consumed</th><th>Cost</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -136,12 +136,12 @@ export default function Show({ list }: { list: MaterialListDetail }) {
                     </tbody>
                 </table>
                 <div className="mt-6 flex flex-wrap gap-2">
-                    {list.can_submit && <button type="button" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" disabled={busy} onClick={() => void post('submit')}>Enviar</button>}
-                    {list.can_approve && <button type="button" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" onClick={() => openQuantities('approve')}>Aprobar</button>}
-                    {list.can_mark_ordered && <button type="button" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" disabled={busy} onClick={() => void post('mark-ordered')}>Marcar ordenada</button>}
-                    {list.can_register_delivery && <button type="button" className="min-h-11 rounded-lg border px-4 text-sm font-semibold" onClick={() => openQuantities('delivery')}>Registrar entrega</button>}
-                    {list.can_register_consumption && <button type="button" className="min-h-11 rounded-lg border px-4 text-sm font-semibold" onClick={() => openQuantities('consumption')}>Registrar consumo</button>}
-                    {list.can_cancel && <button type="button" className="min-h-11 rounded-lg border px-4 text-sm font-semibold" onClick={() => setDialog('cancel')}>Cancelar</button>}
+                    {list.can_submit && <button type="button" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" disabled={busy} onClick={() => void post('submit')}>Submit</button>}
+                    {list.can_approve && <button type="button" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" onClick={() => openQuantities('approve')}>Approve</button>}
+                    {list.can_mark_ordered && <button type="button" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" disabled={busy} onClick={() => void post('mark-ordered')}>Mark as ordered</button>}
+                    {list.can_register_delivery && <button type="button" className="min-h-11 rounded-lg border px-4 text-sm font-semibold" onClick={() => openQuantities('delivery')}>Record delivery</button>}
+                    {list.can_register_consumption && <button type="button" className="min-h-11 rounded-lg border px-4 text-sm font-semibold" onClick={() => openQuantities('consumption')}>Record usage</button>}
+                    {list.can_cancel && <button type="button" className="min-h-11 rounded-lg border px-4 text-sm font-semibold" onClick={() => setDialog('cancel')}>Cancel</button>}
                 </div>
             </div>
             <Dialog open={dialog !== null} onClose={() => setDialog(null)} className="relative z-50" aria-modal="true">
@@ -149,19 +149,19 @@ export default function Show({ list }: { list: MaterialListDetail }) {
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <DialogPanel className="w-full max-w-md rounded-xl bg-white p-6">
                         <DialogTitle className="text-lg font-semibold">
-                            {dialog === 'cancel' ? 'Cancelar lista' : dialog === 'approve' ? 'Aprobar cantidades' : dialog === 'delivery' ? 'Registrar entrega' : 'Registrar consumo'}
+                            {dialog === 'cancel' ? 'Cancel list' : dialog === 'approve' ? 'Approve quantities' : dialog === 'delivery' ? 'Record delivery' : 'Record usage'}
                         </DialogTitle>
                         <form className="mt-4 space-y-3" onSubmit={confirm}>
                             {dialog === 'cancel' ? (
-                                <label className="block text-sm">Motivo
-                                    <textarea aria-label="Motivo" required className="mt-1 min-h-24 w-full rounded border p-2" value={reason} onChange={(event) => setReason(event.target.value)} />
+                                <label className="block text-sm">Reason
+                                    <textarea aria-label="Reason" required className="mt-1 min-h-24 w-full rounded border p-2" value={reason} onChange={(event) => setReason(event.target.value)} />
                                 </label>
                             ) : list.items.map((item) => (
                                 <label key={item.id} className="block text-sm">{item.material?.name}
-                                    <input aria-label={`Cantidad de ${item.material?.name ?? 'material'}`} required className="mt-1 min-h-11 w-full rounded border px-2" value={quantities[item.id] ?? ''} onChange={(event) => setQuantities({ ...quantities, [item.id]: event.target.value })} />
+                                    <input aria-label={`Quantity for ${item.material?.name ?? 'material'}`} required className="mt-1 min-h-11 w-full rounded border px-2" value={quantities[item.id] ?? ''} onChange={(event) => setQuantities({ ...quantities, [item.id]: event.target.value })} />
                                 </label>
                             ))}
-                            <button type="submit" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" disabled={busy || (dialog === 'cancel' ? reason.trim() === '' : !quantitiesReady)}>Confirmar</button>
+                            <button type="submit" className="min-h-11 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white" disabled={busy || (dialog === 'cancel' ? reason.trim() === '' : !quantitiesReady)}>Confirm</button>
                         </form>
                     </DialogPanel>
                 </div>

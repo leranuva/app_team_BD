@@ -24,13 +24,13 @@ class MaterialListScopeWidget extends StatsOverviewWidget
         $cents = (int) (clone $itemQuery)->whereNotNull('unit_cost_cents')->whereNotNull('consumed_quantity')
             ->selectRaw('coalesce(sum(consumed_quantity * unit_cost_cents), 0) as cents')->value('cents');
         $consumption = $missingCost || $cents === 0
-            ? 'sin costos registrados'
+            ? 'no recorded costs'
             : '$'.number_format($cents / 100, 2);
 
         return [
-            Stat::make('Listas de materiales', (clone $lists)->count()),
-            Stat::make('Pendientes de aprobación', $pending),
-            Stat::make('Consumo total', $consumption),
+            Stat::make('Material lists', (clone $lists)->count()),
+            Stat::make('Awaiting approval', $pending),
+            Stat::make('Total usage', $consumption),
         ];
     }
 }

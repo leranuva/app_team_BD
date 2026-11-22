@@ -12,11 +12,11 @@ class ImportCwicrMaterials extends Command
 {
     protected $signature = 'materials:import-cwicr
         {file? : Ruta al CSV (default: database/data/cwicr_materials.csv)}
-        {--dry-run : Cuenta altas, cambios y omisiones sin escribir}
-        {--truncate : Borra el catálogo antes de importar}
-        {--force : Permite --truncate sin confirmación}';
+        {--dry-run : Count new, updated and skipped rows without writing changes}
+        {--truncate : Clear the catalog before importing}
+        {--force : Allow --truncate without confirmation}';
 
-    protected $description = 'Importa el catálogo CWICR en materials, sin precios ni auditoría por fila';
+    protected $description = 'Import the CWICR catalog into materials without prices or per-row audit entries';
 
     public function handle(MaterialImportService $importer): int
     {
@@ -24,8 +24,8 @@ class ImportCwicrMaterials extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         if ($truncate && ! $dryRun && ! $this->option('force')) {
-            if (! $this->confirm('Esto borrará todos los materiales. ¿Continuar?')) {
-                $this->error('Importación cancelada. Pasa --force para borrar el catálogo sin confirmación.');
+            if (! $this->confirm('This will delete all materials. Continue?')) {
+                $this->error('Import canceled. Pass --force to clear the catalog without confirmation.');
 
                 return self::FAILURE;
             }
@@ -59,8 +59,8 @@ class ImportCwicrMaterials extends Command
             }
             $referenced = (int) DB::table('material_list_items')->distinct()->count('material_id');
             $this->error($referenced > 0
-                ? 'No se puede truncar: '.$this->referencedMaterials($referenced).'. Elimina esas listas o importa sin --truncate para actualizar el catálogo sin borrarlo.'
-                : 'La importación se revirtió por un error de base de datos.');
+                ? 'Cannot truncate: '.$this->referencedMaterials($referenced).'. Delete those lists or run the import without --truncate to update the catalog.'
+                : 'The import was rolled back due to a database error.');
 
             return self::FAILURE;
         }
@@ -71,7 +71,7 @@ class ImportCwicrMaterials extends Command
         }
 
         $this->info(sprintf(
-            '[OK] Importados: %d · Actualizados: %d · Omitidos: %d · Total: %d',
+            '[OK] Imported: %d · Updated: %d · Skipped: %d · Total: %d',
             $result['inserted'],
             $result['updated'],
             $result['skipped'],
@@ -84,7 +84,7 @@ class ImportCwicrMaterials extends Command
     private function referencedMaterials(int $count): string
     {
         return $count === 1
-            ? '1 material está referenciado por listas'
-            : $count.' materiales están referenciados por listas';
+            ? '1 material is referenced by lists'
+            : $count.' materials are referenced by lists';
     }
 }

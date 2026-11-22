@@ -195,7 +195,7 @@ it('rejects unauthorized actors and changes only the time with an audit entry', 
         ->assertJsonPath('data.start', $payload['start_at'])
         ->assertJsonPath('data.job_site.id', $this->site->id)
         ->assertJsonPath('data.worker.id', $this->shift->user_id)
-        ->assertJsonPath('message', 'Turno reasignado');
+        ->assertJsonPath('message', 'Shift rescheduled');
 
     Notification::assertSentTo($this->shift->worker, ShiftReassignedNotification::class,
         fn (ShiftReassignedNotification $notification, array $channels) => $channels === ['database', 'mail']
@@ -271,7 +271,7 @@ it('requires the version and treats an unchanged interval as a no-op', function 
     $payload = ['start_at' => '2026-11-21T08:00:00-05:00', 'end_at' => '2026-11-21T12:00:00-05:00'];
     $this->actingAs($this->admin)->patchJson($url, $payload)
         ->assertUnprocessable()
-        ->assertJsonPath('errors.expected_updated_at.0', 'Debes enviar la versión del turno para evitar sobreescrituras');
+        ->assertJsonPath('errors.expected_updated_at.0', 'Include the shift version to avoid overwriting changes');
 
     $stamp = $this->shift->updated_at->setTimezone('America/New_York')->toIso8601String();
     $this->patchJson($url, [

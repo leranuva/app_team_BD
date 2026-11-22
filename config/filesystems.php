@@ -47,7 +47,14 @@ return [
             'report' => false,
         ],
 
-        's3' => [
+        's3' => env('JOB_FILES_DRIVER') === 'local' ? [
+            'driver' => 'local',
+            'root' => storage_path('app/private/job-files'),
+            'url' => '/job-files',
+            'serve' => true,
+            'visibility' => 'private',
+            'throw' => true,
+        ] : [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
@@ -65,7 +72,14 @@ return [
         // Same private bucket as s3, under exports/. Objects are temporary:
         // hand them out with Storage::disk('exports')->temporaryUrl($path, now()->addMinutes(15)).
         // Never switch this disk to public visibility.
-        'exports' => [
+        'exports' => env('JOB_FILES_DRIVER') === 'local' ? [
+            'driver' => 'local',
+            'root' => storage_path('app/private/exports'),
+            'url' => '/report-files',
+            'serve' => true,
+            'visibility' => 'private',
+            'throw' => true,
+        ] : [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),

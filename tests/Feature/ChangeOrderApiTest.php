@@ -25,7 +25,7 @@ beforeEach(function (): void {
     $this->worker = User::factory()->create()->assignRole(LogisticsRole::Carpenter->value);
     $this->service = app(ChangeOrderService::class);
     $this->order = $this->service->create($this->supervisor, $this->site, $this->scope, [
-        'title' => 'Muro', 'description' => 'Extra', 'amount_cents' => 1000, 'time_impact_days' => 1,
+        'title' => 'Muro', 'description' => 'Overtime', 'amount_cents' => 1000, 'time_impact_days' => 1,
     ]);
 });
 

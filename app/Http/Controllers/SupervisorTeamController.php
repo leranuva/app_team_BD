@@ -80,27 +80,30 @@ class SupervisorTeamController extends Controller
             ->get()
             ->groupBy('user_id');
 
-        return $workers->map(function (User $worker) use ($actor, $shifts, $zone): array {
-            $shift = $shifts->get($worker->id)?->first();
-            $attendance = $shift?->attendance;
+        return $workers->flatMap(function (User $worker) use ($actor, $shifts, $zone): array {
+            $assignments = $shifts->get($worker->id) ?? collect([null]);
 
-            $status = match (true) {
-                $attendance?->geofence_flagged => 'outside_geofence',
-                $attendance?->clocked_out_at !== null => 'completed',
-                $attendance !== null => 'clocked_in',
-                $shift !== null => 'scheduled',
-                default => 'no_shift',
-            };
+            return $assignments->map(function (?Shift $shift) use ($actor, $worker, $zone): array {
+                $attendance = $shift?->attendance;
 
-            return [
-                'id' => $worker->id,
-                'name' => $worker->name,
-                'status' => $status,
-                'job_site' => $shift?->jobSite?->name,
-                'clocked_in_at' => $attendance?->clocked_in_at?->setTimezone($zone)->toIso8601String(),
-                'attendance_id' => $attendance?->id,
-                'can_correct' => $attendance !== null && $actor->can('correct', $attendance),
-            ];
+                return [
+                    'id' => $worker->id,
+                    'shift_id' => $shift?->id,
+                    'name' => $worker->name,
+                    'status' => match (true) {
+                        $attendance?->geofence_flagged => 'outside_geofence',
+                        $attendance?->clocked_out_at !== null => 'completed',
+                        $attendance !== null => 'clocked_in',
+                        $shift !== null => 'scheduled',
+                        default => 'no_shift',
+                    },
+                    'job_site' => $shift?->jobSite?->name,
+                    'clocked_in_at' => $attendance?->clocked_in_at?->setTimezone($zone)->toIso8601String(),
+                    'clocked_out_at' => $attendance?->clocked_out_at?->setTimezone($zone)->toIso8601String(),
+                    'attendance_id' => $attendance?->id,
+                    'can_correct' => $attendance !== null && $actor->can('correct', $attendance),
+                ];
+            })->all();
         })->values()->all();
     }
 }

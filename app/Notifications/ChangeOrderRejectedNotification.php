@@ -33,9 +33,9 @@ class ChangeOrderRejectedNotification extends Notification implements ShouldQueu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Orden de cambio rechazada '.$this->code)
+            ->subject('Change order rejected '.$this->code)
             ->line($this->title)
-            ->line('Motivo: '.$this->reason)
-            ->action('Ver operaciones', route('dashboard'));
+            ->line('Reason: '.$this->reason)
+            ->action('View operations', route('dashboard'));
     }
 }

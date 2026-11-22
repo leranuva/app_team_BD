@@ -62,7 +62,7 @@ class JobScopeController extends Controller
         $progress = $request->integer('progress');
         if ($progress === 100 && $record->status !== 'completed') {
             throw ValidationException::withMessages([
-                'progress' => 'El avance del 100 % solo corresponde a un alcance completado.',
+                'progress' => 'Progress can reach 100% only after the scope is complete.',
             ]);
         }
 

@@ -20,19 +20,20 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Excel as ExcelWriter;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use UnitEnum;
 
 class HoursByEmployee extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reportes';
+    protected static string|UnitEnum|null $navigationGroup = 'Reports';
 
-    protected static ?string $navigationLabel = 'Horas por empleado';
+    protected static ?string $navigationLabel = 'Hours by employee';
 
-    protected static ?string $title = 'Horas por empleado';
+    protected static ?string $title = 'Hours by employee';
 
     protected static ?int $navigationSort = 10;
 
@@ -57,11 +58,11 @@ class HoursByEmployee extends Page
     {
         return $schema->components([
             Form::make([
-                DatePicker::make('from')->label('Desde')->required()->native(false),
-                DatePicker::make('until')->label('Hasta')->required()->native(false)->afterOrEqual('from'),
-                Select::make('job_site_id')->label('Obra')->placeholder('Todas las obras visibles')
+                DatePicker::make('from')->label('From')->required()->native(false),
+                DatePicker::make('until')->label('To')->required()->native(false)->afterOrEqual('from'),
+                Select::make('job_site_id')->label('Job site')->placeholder('All visible job sites')
                     ->options(fn (): array => $this->siteOptions())->searchable(),
-                Select::make('user_id')->label('Trabajador')->placeholder('Todos')
+                Select::make('user_id')->label('Worker')->placeholder('All')
                     ->options(fn (): array => $this->workerOptions())->searchable(),
             ])->statePath('filters')->columns(4)->live(),
             View::make('filament.reports.hours-by-employee')
@@ -73,16 +74,24 @@ class HoursByEmployee extends Page
     {
         return [
             Action::make('export')
-                ->label('Descargar Excel')
-                ->action(function (): ?BinaryFileResponse {
+                ->label('Download Excel')
+                ->action(function (): ?StreamedResponse {
                     $range = $this->range();
                     if ($range === null) {
-                        Notification::make()->title('Indica un rango de fechas válido.')->danger()->send();
+                        Notification::make()->title('Enter a valid date range.')->danger()->send();
 
                         return null;
                     }
 
-                    return Excel::download(new HoursByEmployeeExport($this->rows()), 'horas-por-empleado.xlsx');
+                    $workbook = Excel::raw(new HoursByEmployeeExport($this->rows()), ExcelWriter::XLSX);
+
+                    return response()->streamDownload(
+                        static function () use ($workbook): void {
+                            echo $workbook;
+                        },
+                        'hours-by-employee.xlsx',
+                        ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+                    );
                 }),
         ];
     }

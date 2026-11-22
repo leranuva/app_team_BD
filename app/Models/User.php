@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\LogisticsPermission;
 use App\Enums\LogisticsRole;
+use App\Models\Scopes\LogisticsVisibilityScope;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -92,6 +93,20 @@ class User extends Authenticatable implements FilamentUser
     public function jobSites(): BelongsToMany
     {
         return $this->belongsToMany(JobSite::class)->withTimestamps();
+    }
+
+    public function clockableJobSites(): BelongsToMany
+    {
+        return $this->jobSites()->whereIn('job_sites.status', ['planned', 'active']);
+    }
+
+    public function canResumeWorkToday(): bool
+    {
+        $today = now(config('app.business_timezone'))->startOfDay()->utc();
+
+        return $this->hasAnyRole(self::operationalRoles()) && $this->attendances()
+            ->withoutGlobalScope(LogisticsVisibilityScope::class)
+            ->where('clocked_out_at', '>=', $today)->where('clocked_out_at', '<=', now())->exists();
     }
 
     public function shifts(): HasMany

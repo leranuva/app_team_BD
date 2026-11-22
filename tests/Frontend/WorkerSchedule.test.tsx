@@ -33,7 +33,7 @@ vi.mock('@fullcalendar/react', () => ({
 const options = {
     can_edit: false,
     job_sites: [{ id: 3, name: 'Queens' }],
-    statuses: [{ value: 'programmed', label: 'Programado' }],
+    statuses: [{ value: 'programmed', label: 'Scheduled' }],
     roles: [{ value: 'carpintero', label: 'Carpintero' }],
 };
 
@@ -50,9 +50,12 @@ afterEach(cleanup);
 
 describe('worker schedule', () => {
     it('renders a read-only week and opens the shift detail', async () => {
+        window.history.replaceState(null, '', '/worker/schedule?role_required=carpintero');
         render(<Schedule options={options} timeZone="America/New_York" />);
-        expect(screen.getByRole('heading', { name: 'Mi semana' })).toBeTruthy();
+        expect(screen.getByRole('heading', { name: 'My week' })).toBeTruthy();
         expect(screen.getByTestId('editable').textContent).toBe('false');
+        expect(screen.queryByRole('combobox', { name: 'Role' })).toBeNull();
+        expect(new URLSearchParams(window.location.search).has('role_required')).toBe(false);
         fireEvent.click(screen.getByRole('button', { name: 'Abrir turno' }));
         expect(await screen.findByRole('dialog')).toBeTruthy();
         const dialog = screen.getByRole('dialog');

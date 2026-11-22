@@ -31,6 +31,7 @@ class Shift extends Model
             'ends_at' => 'immutable_datetime',
             'status' => ShiftStatus::class,
             'role_required' => ShiftRole::class,
+            'is_unscheduled' => 'boolean',
         ];
     }
 
@@ -90,7 +91,7 @@ class Shift extends Model
         $legacyRole = $this->requiredRole?->name;
 
         foreach (ShiftRole::cases() as $role) {
-            if ($role->label() === $legacyRole) {
+            if ($role->logisticsRole()->value === $legacyRole) {
                 return $role;
             }
         }
@@ -102,7 +103,7 @@ class Shift extends Model
     {
         return $query->where(fn (Builder $roles) => $roles->where('role_required', $role->value)
             ->orWhere(fn (Builder $legacy) => $legacy->whereNull('role_required')
-                ->whereHas('requiredRole', fn (Builder $required) => $required->where('name', $role->label()))));
+                ->whereHas('requiredRole', fn (Builder $required) => $required->where('name', $role->logisticsRole()->value))));
     }
 
     public function attendance(): HasOne

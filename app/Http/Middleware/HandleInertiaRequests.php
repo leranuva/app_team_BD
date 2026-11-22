@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\LogisticsPermission;
+use App\Enums\LogisticsRole;
 use App\Models\JobSite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -33,6 +34,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $role = $user?->getRoleNames()->first();
         $sites = $user && $user->canAny([
             LogisticsPermission::GlobalAccess->value,
             LogisticsPermission::SuperviseSites->value,
@@ -50,7 +52,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $user?->only(['id', 'name', 'email']),
-                'role' => $user?->getRoleNames()->first(),
+                'role' => $role,
+                'role_label' => $role === null ? null : LogisticsRole::displayName($role),
                 'sites' => $sites,
             ],
         ];

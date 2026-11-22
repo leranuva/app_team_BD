@@ -13,7 +13,7 @@ class InvalidChangeOrderTransitionException extends RuntimeException
         public readonly string $to,
         public readonly array $allowed,
     ) {
-        parent::__construct("No se puede pasar de {$from} a {$to}.");
+        parent::__construct("Cannot change status from {$from} to {$to}.");
     }
 
     public function render(Request $request): JsonResponse

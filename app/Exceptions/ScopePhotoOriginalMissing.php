@@ -8,6 +8,6 @@ class ScopePhotoOriginalMissing extends RuntimeException
 {
     public function __construct()
     {
-        parent::__construct('El archivo original ya no está disponible');
+        parent::__construct('The original file is no longer available');
     }
 }

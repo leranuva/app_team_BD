@@ -44,11 +44,11 @@ class ShiftReassignedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Cambio de horario de turno')
-            ->line('Obra: '.$this->site)
-            ->line('Horario anterior: '.$this->previousStart.' a '.$this->previousEnd)
-            ->line('Horario nuevo: '.$this->start.' a '.$this->end)
-            ->line('Reasignado por: '.$this->actorName)
-            ->action('Ver operaciones', route('dashboard'));
+            ->subject('Shift schedule changed')
+            ->line('Job site: '.$this->site)
+            ->line('Previous schedule: '.$this->previousStart.' to '.$this->previousEnd)
+            ->line('New schedule: '.$this->start.' to '.$this->end)
+            ->line('Rescheduled by: '.$this->actorName)
+            ->action('View operations', route('dashboard'));
     }
 }

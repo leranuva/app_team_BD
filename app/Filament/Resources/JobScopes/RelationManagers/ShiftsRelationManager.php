@@ -10,7 +10,7 @@ class ShiftsRelationManager extends RelationManager
 {
     protected static string $relationship = 'shifts';
 
-    protected static ?string $title = 'Turnos';
+    protected static ?string $title = 'Shifts';
 
     public function isReadOnly(): bool
     {
@@ -20,10 +20,10 @@ class ShiftsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('worker.name')->label('Trabajador'),
-            TextColumn::make('starts_at')->label('Fecha')
-                ->formatStateUsing(fn ($state): string => $state->timezone(config('app.business_timezone'))->format('d/m/Y H:i')),
-            TextColumn::make('status')->label('Estado')->badge()
+            TextColumn::make('worker.name')->label('Worker'),
+            TextColumn::make('starts_at')->label('Date')
+                ->formatStateUsing(fn ($state): string => $state->timezone(config('app.business_timezone'))->format('m/d/Y H:i')),
+            TextColumn::make('status')->label('Status')->badge()
                 ->formatStateUsing(fn ($state): string => $state->label()),
         ])->defaultSort('starts_at');
     }
