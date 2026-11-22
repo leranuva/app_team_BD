@@ -341,7 +341,7 @@ Durante el pase, el detalle React de una orden rechazada no mostraba el motivo: 
 
 El catálogo maestro sale de CWICR, el catálogo abierto de [Data-Driven Construction](https://github.com/datadrivenconstruction/openconstructionerp) (`data/catalog/cwicr_materials.csv`).
 
-**Licencia.** CWICR se publica bajo [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): uso no comercial, con atribución a Data-Driven Construction y al catálogo CWICR. Si este proyecto se usa con fines comerciales hace falta la licencia comercial de DDC; CC BY-NC 4.0 no la cubre. El CSV completo no se versiona. `.gitignore` excluye `database/data/cwicr_materials.csv`. No lo añadas al repositorio sin esta atribución.
+**Licencia.** CWICR se publica bajo [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): uso no comercial, con atribución a Data-Driven Construction y al catálogo CWICR. Si este proyecto se usa con fines comerciales hace falta la licencia comercial de DDC; CC BY-NC 4.0 no la cubre. El CSV completo está versionado en `database/data/cwicr_materials.csv`.
 
 La tabla `materials` guarda `code`, `name`, `unit`, `category`, `is_active` y `notes`. No guarda precio, moneda ni stock: el pedido se gestiona fuera de esta aplicación. `unit` es `varchar(20)`. Alcanza para `kg`, `m3`, `m2`, `m`, `pcs`, `set`, `100m`, `100m2` y `1000pcs`. Una unidad propia más larga no cabe en la columna; hay que ampliarla antes de usarla. Las categorías se almacenan como en el CSV (`Steel & Metal`, `Concrete & Cement`, `Electrical`, `Paint & Coatings`, `Wood & Timber`, `Fasteners`, `Pipes & Fittings`, `Insulation`, `Waterproofing`, `Aggregates & Earth`, `Glass & Glazing`, `General`). No se traducen a oficios. El Select de Filament leerá `config/materials.php`, la misma lista.
 
@@ -351,7 +351,7 @@ La migración `2026_11_21_260000_reshape_materials_catalog` conserva el `id`. As
 
 El CSV se lee con `league/csv`, dependencia directa `^9.29` en `composer.json` (instalada 9.29.0). Esa restricción no admite 10.x: un `composer update` no cambia la API de `Reader`. La cabecera tiene que incluir `code`, `name`, `category` y `unit`. `base_price`, `min_price`, `max_price`, `currency` y el resto de columnas se ignoran. No hay `homedepot_sku`.
 
-Descarga el catálogo completo desde [cwicr_materials.csv](https://github.com/datadrivenconstruction/openconstructionerp/blob/main/data/catalog/cwicr_materials.csv) y guárdalo en `database/data/cwicr_materials.csv`. Ese archivo está en `.gitignore`. El ejemplo versionado es `database/data/cwicr_materials_sample.csv` (10 filas).
+El catálogo completo está en `database/data/cwicr_materials.csv`, copiado de [cwicr_materials.csv](https://github.com/datadrivenconstruction/openconstructionerp/blob/main/data/catalog/cwicr_materials.csv). `database/data/cwicr_materials_sample.csv` sigue siendo el ejemplo de 10 filas que usan las pruebas.
 
 ~~~powershell
 php artisan materials:import-cwicr
