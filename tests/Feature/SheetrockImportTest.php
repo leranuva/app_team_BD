@@ -1,0 +1,35 @@
+<?php
+
+use App\Models\Material;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Activitylog\Models\Activity;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+it('imports the nyc sheetrock catalog as the drywall category', function (): void {
+    $this->artisan('materials:import-sheetrock')
+        ->assertSuccessful()
+        ->expectsOutputToContain('[OK] Importados: 35 · Actualizados: 0 · Omitidos: 0 · Total: 35');
+
+    $panel = Material::query()->where('code', 'SR-FIR-001')->first();
+
+    expect(Material::query()->count())->toBe(35)
+        ->and(Material::query()->where('category', 'Drywall')->count())->toBe(35)
+        ->and(config('materials.categories'))->toContain('Drywall')
+        ->and($panel->unit)->toBe('Sheet')
+        ->and($panel->name)->toContain('Firecode X')
+        ->and($panel->notes)->toContain('Fire-Rated (Type X & C)')
+        ->and($panel->notes)->not->toContain('17.48');
+});
+
+it('updates an existing sheetrock code without writing an activity row', function (): void {
+    Material::factory()->create(['code' => 'SR-STD-001', 'category' => 'General', 'name' => 'Viejo']);
+
+    $this->artisan('materials:import-sheetrock')
+        ->assertSuccessful()
+        ->expectsOutputToContain('Actualizados: 1');
+
+    expect(Material::query()->where('code', 'SR-STD-001')->value('category'))->toBe('Drywall')
+        ->and(Activity::query()->where('log_name', 'materials')->count())->toBe(0);
+});
