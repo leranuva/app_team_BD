@@ -2,6 +2,20 @@
 
 Aplicación interna para una constructora en Nueva York. La Fase 0 entrega autenticación, alta de cuentas internas, panel de obras y el esquema para desarrollar los módulos de logística.
 
+## Estado del proyecto
+
+Las fases 0 a 5 están cerradas en código y en `main`. Los pull requests [#1](https://github.com/leranuva/app_team_BD/pull/1) (CI y guías de despliegue) y [#2](https://github.com/leranuva/app_team_BD/pull/2) (portal de campo, corrección de asistencia y reportes) ya están mergeados. El CI de ese árbol pasó en [44984661715](https://github.com/leranuva/app_team_BD/actions/runs/44984661715).
+
+Sigue pendiente:
+
+- Aprobación de horas: no existe `approved_by_supervisor_at`. `/supervisor/hours` no aprueba.
+- No hay Service Worker ni Background Sync. El fichaje pendiente solo se envía con la página abierta.
+- No hay miniatura derivada: `url` y `thumbnail_url` firman el mismo archivo.
+- No hay página React de la obra. El detalle sigue en Filament.
+- Falta el pase manual de la Fase 4 y del Bloque A de la Fase 5 (30–40 minutos, GPS en un móvil real).
+- El costo de materiales en el PDF depende de `unit_cost_cents` cargado a mano, y el presupuesto es por obra (`job_sites.base_budget`), no por alcance.
+- El aviso de runtime Node 20 en las actions quedó resuelto: `checkout`, `setup-node` y `cache` van en v5 (Node 24). La aplicación se compila con Node 20.
+
 ## Arranque
 
 Requisitos: PHP 8.3 con PDO PostgreSQL, intl, mbstring y zip, Composer 2, Node.js 22.12+ y PostgreSQL 16. Crea una base vacía y un usuario con permisos sobre ella. Desde la raíz del proyecto:
