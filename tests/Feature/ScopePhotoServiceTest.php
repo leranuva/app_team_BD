@@ -116,6 +116,21 @@ it('keeps a photo archived when its original object is missing', function (): vo
     expect(Activity::forSubject($photo)->where('event', 'updated')->count())->toBe(1);
 });
 
+it('updates the caption once and ignores an unchanged value', function (): void {
+    $photo = $this->service->store($this->scope, $this->supervisor, UploadedFile::fake()->image('avance.jpg'), ['caption' => 'Muro']);
+    $updated = $this->service->updateCaption($photo, $this->supervisor, '  Losa  ');
+    expect($updated->caption)->toBe('Losa');
+    $cleared = $this->service->updateCaption($updated, $this->supervisor, '   ');
+    expect($cleared->caption)->toBeNull();
+    $again = $this->service->updateCaption($cleared, $this->supervisor, null);
+    expect($again->updated_at->equalTo($cleared->updated_at))->toBeTrue()
+        ->and(Activity::forSubject($photo)->where('description', 'updated')->count())->toBe(2);
+
+    $outside = User::factory()->create()->assignRole(LogisticsRole::Supervisor->value);
+    expect(fn () => $this->service->updateCaption($photo, $outside, 'Ajena'))->toThrow(AuthorizationException::class);
+    expect($photo->fresh()->caption)->toBeNull();
+});
+
 it('rejects force-filled changes to photo metadata', function (string $attribute, mixed $value): void {
     $photo = ScopePhoto::factory()->create();
     expect(fn () => $photo->forceFill([$attribute => $value])->save())

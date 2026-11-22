@@ -106,7 +106,7 @@ export default function ClockButton({ clock, timeZone }: { clock: ClockPanel; ti
             )}
             {(open || selected) && (
                 <button type="button" onClick={() => { void punch(); }} disabled={stage !== 'idle'}
-                    className="mt-4 min-h-12 rounded-lg bg-slate-900 px-6 font-semibold text-white disabled:opacity-70">
+                    className="mt-4 min-h-12 min-w-12 rounded-lg bg-slate-900 px-6 font-semibold text-white disabled:opacity-70">
                     {stage === 'idle' ? (open ? 'Registrar salida' : 'Registrar entrada') : busyLabel}
                 </button>
             )}

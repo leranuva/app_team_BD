@@ -154,9 +154,81 @@ El observer permite actualizar `caption` y `archived_at` y protege los demás me
 
 El archivado conserva el objeto en S3 y evita emitir enlaces nuevos. Los enlaces ya emitidos pueden seguir funcionando hasta expirar. Al repetir un archivado se conservan `archived_at` y el motivo original. Al repetir una restauración de una foto activa se conserva su estado. Las repeticiones omiten una segunda entrada en la bitácora.
 
-`LogsActivity` guarda una sola actualización por cambio, con descripción `scope_photo.archived` o `scope_photo.restored` y el actor en `causer`. El motivo es opcional en el servicio y se guarda en `properties.reason` al archivar. El futuro formulario lo pedirá.
+`LogsActivity` guarda una sola actualización por cambio, con descripción `scope_photo.archived` o `scope_photo.restored` y el actor en `causer`. El motivo es opcional en el servicio y se guarda en `properties.reason` al archivar. Filament y la API lo envían con un máximo de 500 caracteres.
 
 Antes de restaurar, el servicio comprueba que el objeto siga en S3. Si se borró manualmente o por una política de retención, la foto sigue archivada y el log de la aplicación registra `photo_id` y `path` como advertencia. Las pruebas usan `Storage::fake('s3')`, que admite `exists()`, `delete()` y las comprobaciones `assertExists()` y `assertMissing()`.
+
+`updateCaption()` permite corregir la descripción, que es el otro campo mutable. Recorta el texto, trata el vacío como `null` y no escribe ni audita si no hubo cambio. La galería de esta fase no expone esa edición.
+
+### Fotos de avance: Filament, API y galería React
+
+La policy se descubre sola: `App\Policies\ScopePhotoPolicy` corresponde a `App\Models\ScopePhoto`. No hay `AuthServiceProvider`. La membresía del supervisor está en la tabla `job_site_user`. Carpintero y Ayudante no consultan fotos. Nadie puede borrarlas; solo se archivan y se restauran.
+
+| Rol | Ver, crear, archivar y restaurar |
+| --- | --- |
+| Super Admin y Administrador | Todas las obras. |
+| Supervisor | Solo las obras en las que tiene membresía. |
+| Carpintero y Ayudante | Sin acceso. Queda para una iteración posterior si se les da consulta. |
+
+### FileUpload y ScopePhotoService
+
+El formulario de Filament usa `FileUpload` con `disk('s3')`, `visibility('private')`, `preventFilePathTampering()` y `storeFiles(false)`. Filament no guarda el archivo ni escribe la ruta en el modelo. La acción `uploadPhoto` recibe el `TemporaryUploadedFile` y llama a `ScopePhotoService::store()`. El servicio valida el MIME real, genera `scopes/{obra}/{alcance}/{uuid}.{ext}`, lee `size_bytes` desde S3 y borra el objeto si la base no confirma la fila. Archivar y restaurar también pasan por el servicio, no por `update()`.
+
+Mientras el formulario no se envía, Livewire guarda el archivo temporal en el disco por defecto, que aquí es `local`, dentro de `storage/app/private/livewire-tmp`. La aplicación no publica `config/livewire.php`, así que vale el ajuste del paquete: `temporary_file_upload.cleanup` está en `true`. Al montar un componente con subida de archivos, Livewire borra temporales de ese directorio con más de 24 horas. Quitar el archivo del campo lo elimina en ese momento. `php artisan livewire:configure-s3-upload-cleanup` no aplica: ese comando exige que el disco temporal sea S3 y configura una regla de ciclo de vida del bucket. El temporal de este proyecto no está en S3.
+
+### API
+
+La sesión es la de Sanctum. `url` y `thumbnail_url` se firman 15 minutos dentro de `ScopePhotoResource` y no se guardan. No hay miniatura derivada: las dos claves usan la misma firma. Si la foto está archivada, ambas son `null`. El JSON no incluye `path`. `can_archive` y `can_restore` salen de la policy y del estado de archivo, igual que `extendedProps.can_edit` en el calendario.
+
+Usar la imagen completa como miniatura es la decisión de esta fase, no un fallo. Si un alcance acumula cientos de fotos, el navegador descargará el original para cada celda. La evolución natural es generar una miniatura real con un job y Imagick, y firmar esa ruta en `thumbnail_url`.
+
+- `GET /api/job-scopes/{scope}/photos?status=active|archived|all&page=` autoriza `viewAny` sobre ese alcance. Devuelve 20 por página, activas por defecto, ordenadas por `created_at` descendente. La cuota es de 60 por minuto.
+- `POST /api/job-scopes/{scope}/photos` recibe `file`, `caption`, `lat`, `lng` y `taken_at`. Responde 201. La cuota de escritura, compartida con archivar y restaurar, es de 30 por minuto.
+- `PATCH /api/scope-photos/{photo}/archive` acepta `reason` opcional. `PATCH /api/scope-photos/{photo}/restore` responde 200, o 422 con el mensaje «El archivo original ya no está disponible» si el objeto ya no está en S3.
+- Un alcance o una foto que el usuario no puede ver responde 403. Un identificador inexistente responde 404.
+
+`/job-scopes/{scope}` renderiza la galería. Las pestañas son Activas y Archivadas; Todas solo aparece con acceso global. «Cargar más» pide la página siguiente. El modal de detalle atrapa el foco y se cierra con Escape. El de subida muestra el avance y deshabilita el envío mientras dura.
+
+| Respuesta | Aviso |
+| --- | --- |
+| 201 | «Foto subida» y la miniatura entra en la pestaña activa. |
+| 422 al subir | El primer error del backend, por ejemplo el tamaño o el tipo. |
+| 403 | «Sin permisos». |
+| 200 al archivar | «Foto archivada». Sale de Activas y queda en Archivadas. |
+| 200 al restaurar | «Foto restaurada». El movimiento es el inverso. |
+| 422 al restaurar | «El archivo original ya no está disponible». |
+
+En el dashboard, un supervisor con un alcance `active`, `in_progress` o `pending` ve «Ver fotos del alcance» y el conteo de fotos activas. Se prefiere `active`, después `in_progress` y al final `pending`. Un alcance `completed` queda fuera: el supervisor ya no sube fotos de un alcance cerrado. Si más adelante hacen falta fotos de cierre, basta con añadir ese estado a la consulta.
+
+#### Verificación manual
+
+El 21 de noviembre de 2026 se abrió la galería en el navegador con `php artisan serve` y un supervisor de la obra. Esta máquina no tiene credenciales AWS, así que el disco `s3` se apuntó solo durante la prueba a un directorio local privado con URLs firmadas y se restauró la configuración S3 al terminar. Los objetos de prueba se borraron después.
+
+- El dashboard mostró «Ver fotos del alcance» hacia el alcance `active` y no hacia otro alcance `completed` de la misma obra.
+- El supervisor vio las pestañas Activas y Archivadas, sin Todas.
+- Tres JPEG se enviaron como `multipart/form-data` y respondieron 201. La vista previa local cargó. La barra de progreso pasó de 0 a 100 y apareció el aviso «Foto subida».
+- Las tres miniaturas cargaron desde la URL firmada. `url` y `thumbnail_url` coincidían.
+- El modal abrió con `aria-modal="true"`, la descripción, la hora de Nueva York y el autor. Escape lo cerró.
+- Archivar respondió 200, sacó la foto de Activas y la mostró en Archivadas sin imagen. Restaurar respondió 200 y la devolvió a Activas.
+- Tras borrar el objeto del bucket y archivarla de nuevo, restaurar respondió 422 y el aviso fue «El archivo original ya no está disponible». La foto siguió archivada.
+
+Ejecuta `php artisan test --filter=ScopePhoto`, `npm test` y `npm run build`.
+
+### Obras y alcances
+
+La obra conserva las columnas de la fase anterior: `client`, `latitude`, `longitude` y `geofence_meters`. La API las expone como `client_name`, `lat`, `lng` y `geofence_radius_m`. El estado guardado sigue siendo `planned` (el valor por defecto de la migración), junto con `active`, `on_hold`, `completed` y `cancelled`. No se usa `planning` para no partir el dato ya almacenado. La obra principal del trabajador sigue en `users.primary_job_site_id`; `job_site_user` no tiene `is_primary`.
+
+La geocodificación es manual. El detalle de Filament dibuja el pin y el círculo del radio con Leaflet 1.9.4 y teselas de OpenStreetMap, sin clave de API. «Ver en mapa externo» abre Google Maps con las coordenadas. El formulario acepta un radio de 50 a 500 metros; el valor por defecto sigue siendo 150. El fichaje continúa leyendo `geofence_meters`.
+
+| Rol | Filament obras | API `GET /api/job-sites` | Filament alcances | API `GET /api/job-scopes` |
+| --- | --- | --- | --- | --- |
+| Super Admin y Administrador | CRUD. | Todas. | CRUD. El borrado es lógico. | Todas. `can_edit` verdadero. |
+| Supervisor | Solo consulta de sus obras. | Sus obras, por `job_site_user`. | CRUD de los alcances de sus obras, sin borrar. | Esos alcances. `can_edit` verdadero. |
+| Carpintero y Ayudante | Sin acceso. | Obras con un turno propio programado o confirmado que aún no terminó. | Sin acceso. | Alcances de esas obras. `can_edit` falso. |
+
+`Editar` en `/job-scopes/{scope}` abre el formulario de Filament. El formulario no se duplica en React. Las fechas y las notas son columnas nuevas y opcionales. El avance al 100 % solo se guarda si el estado es `completed`. El responsable es un usuario con rol Supervisor y membresía en la obra. Duplicar un alcance crea otra fila en la misma obra, pendiente y sin fotos ni turnos.
+
+En el dashboard, «Mis obras» lista las obras del supervisor con alcances y fotos activas. Para carpintero y ayudante la misma sección es de solo lectura y sale de sus turnos futuros. Un alcance `completed` sigue fuera del enlace de fotos.
 
 ### Asistencias y horas
 
@@ -192,5 +264,217 @@ Remove-Item Env:DB_CONNECTION, Env:DB_DATABASE
 
 Las migraciones de la Fase 0 usan `json()`, que produce `json` nativo en PostgreSQL y `text` en SQLite. Los adjuntos de trabajadores usan `jsonb()` para permitir la comparación que necesita el selector de equipos al consultar usuarios con `DISTINCT`. SQLite también representa esas columnas como texto. PostgreSQL aplica precisión decimal y tipos temporales con zona, mientras SQLite usa afinidades de tipo y guarda las fechas en la convención UTC de Laravel. Usa el resultado de PostgreSQL para validar cambios de esquema y consultas dependientes del motor.
 
-Las pruebas cubren inicio de sesión, acceso por rol, aislamiento por obra, creación de obras con miembros, integridad de sitio y trabajador en asistencias y auditoría de turnos. El fichaje, la aprobación de órdenes y los demás flujos de escritura quedan para las fases correspondientes.
+Las pruebas cubren inicio de sesión, acceso por rol, aislamiento por obra, creación de obras con miembros, integridad de sitio y trabajador en asistencias y auditoría de turnos.
+
+### Órdenes de cambio
+
+```mermaid
+stateDiagram-v2
+    [*] --> draft
+    draft --> submitted: solicitante o administrador
+    draft --> cancelled: administrador
+    submitted --> under_review: administrador o supervisor de la obra
+    submitted --> cancelled: administrador
+    under_review --> approved: administrador, o supervisor si el valor absoluto no supera el umbral
+    under_review --> rejected: administrador o supervisor de la obra
+    under_review --> cancelled: administrador
+    approved --> [*]
+    rejected --> [*]
+    cancelled --> [*]
+```
+
+Una orden aprobada no se cancela. El ajuste contrario es otra orden, con monto o días negativos. `rejected` y `cancelled` también son finales.
+
+| Actor | Aprobar en `under_review` |
+| --- | --- |
+| Super Admin y Administrador | Cualquier monto. |
+| Supervisor de la obra | Solo si `abs(amount_cents)` es menor o igual a `config/change_orders.php` → `supervisor_approval_threshold_cents` (500000, es decir $5,000). |
+| Otro supervisor, carpintero o ayudante | No. |
+
+`amount_cents` es un entero con signo. Un valor negativo es un crédito. El umbral compara el valor absoluto, así que un crédito de $6,000 tampoco lo aprueba el supervisor.
+
+Una transición que el grafo no permite responde **422** con `{ message, from, to, allowed }`. Un actor que no puede ejecutar una transición sí permitida, o que no puede ver la orden, responde **403**. Un id inexistente responde **404**. No se usa 409: la orden no quedó en conflicto con otra escritura; el estado de origen no admite el destino.
+
+`approved_change_orders_cents` y `approved_time_impact_days` en `job_scopes` y `job_sites` son caché. La fuente de verdad son las filas `change_orders` con estado `approved`. `recalculateImpact()` las vuelve a sumar y se puede ejecutar más de una vez. La caché de la obra solo incluye órdenes sin alcance; no suma las de sus alcances. `approved_adjustment` y `approved_extra_days` siguen siendo columnas anteriores y no participan en este cálculo.
+
+El código `CO-{obra}-{año Nueva York}-{secuencia}` sale de `change_order_counters`. La creación inserta el contador del año y lo bloquea con `lockForUpdate` dentro de la transacción. SQLite no serializa ese bloqueo como PostgreSQL 16; la unicidad secuencial se prueba en los dos motores y la concurrencia real queda cubierta por el bloqueo de PostgreSQL.
+
+Los adjuntos viven en el disco S3 privado, en `change-orders/{id}/{uuid}.ext`. La respuesta entrega `temporaryUrl` de 15 minutos y el nombre original. El `path` no sale del modelo. No hay archivado propio: el borrado lógico de la orden oculta la URL y conserva el objeto. El borrado físico en cascada solo ocurre con un `forceDelete`, reservado al administrador y sin botón en la interfaz. `ChangeOrderAttachmentService` no reutiliza `ScopePhotoService` porque las fotos tienen EXIF, geodatos y archivo; un PDF no.
+
+El alta y la edición del borrador están en Filament (`/admin/change-orders`). React lista y muestra, y llama a la API para las transiciones. `Nuevo` abre Filament para no duplicar el formulario ni la subida. Desde el alcance, «Órdenes de cambio» abre `/change-orders?job_scope_id=`. No hay página React de la obra; el detalle sigue en Filament.
+
+Las notificaciones de envío, revisión, aprobación y rechazo salen después de cerrar la transacción y usan `afterCommit()`. La cancelación no avisa.
+
+### Verificación manual 21-nov-2026
+
+Change Orders queda cerrada. La suite de referencia y el pase en navegador de esta fecha cubren el contador, el índice de asistencia, el mapa, la galería y los dos finales de una orden (aprobada y rechazada).
+
+#### PostgreSQL 16
+
+El repositorio no trae `docker-compose.yml`. Docker Desktop (engine 29.9.3) no estaba en marcha en el primer intento y `php artisan test` falló con conexión rechazada en `127.0.0.1:5432`. Tras arrancar el motor se usó el contenedor `constructora-pg16` (`postgres:16`, PostgreSQL 16.16), publicado en `5432`, con `POSTGRES_USER=constructora_test`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_DB=constructora_testing` y `POSTGRES_HOST_AUTH_METHOD=trust`. `phpunit.xml` y `.env.testing` apuntan a ese host, base y usuario, con contraseña vacía; `trust` acepta esa contraseña. No hay PostgreSQL 16 instalado fuera de Docker. La imagen `minio/minio:latest` no se pudo descargar (acceso denegado), así que no hubo bucket S3 real.
+
+`php artisan test` contra esa base: **128 pruebas, 1361 aserciones, 25,46 s, todas verdes**. Entran `ChangeOrder*`, `ScopePhoto*` (con `Storage::fake('s3')`, que no depende del motor) y `Attendance*`.
+
+Concurrencia del código: un proceso padre dejó abierta la transacción con `lockForUpdate` sobre `change_order_counters` y dos procesos PHP hijos llamaron a `ChangeOrderService::create`. Al confirmar el padre, los códigos fueron `CO-121-2026-0001` y `CO-121-2026-0002`.
+
+Índice parcial, el mismo que crea la migración de asistencias:
+
+~~~sql
+CREATE UNIQUE INDEX attendances_one_open_per_worker ON attendances (user_id) WHERE clocked_out_at IS NULL
+~~~
+
+En `constructora_testing` un segundo `INSERT` de asistencia abierta para el mismo `user_id` lo rechazó ese índice. El servicio también rechaza el segundo fichaje abierto antes de llegar a la base; el `INSERT` directo es la prueba del índice.
+
+#### Navegador
+
+`php artisan serve` en `http://127.0.0.1:8000`, base SQLite de la aplicación, cola `database` y correo `log`. Como no había credenciales AWS, el disco `s3` se apuntó solo durante el pase a `storage/app/private/s3` con `serve=true` y se restauró el driver AWS al terminar. Usuarios de esa base, contraseña `password`: `supervisor.verificacion@example.test` (Ana Verificación, miembro de la obra) y `admin.verificacion@example.test` (Administrador). Obra «Brooklyn Heights Verificación», 100 Clark Street, latitud 40.696011, longitud -73.993286, radio 150 m. Alcance «Encofrado verificación».
+
+- Mapa de la obra en Filament, Leaflet con zoom 16: el círculo trae `data-radius="150"` y su caja mide 166×166 px. A esa latitud el zoom 16 equivale a unos 1,811 m/px, así que 150 m de diámetro son unos 166 px. El radio se dibuja en metros, no en grados.
+- Galería `/job-scopes/3`: dos JPEG (de los dos o tres pedidos). Archivar y restaurar devolvieron la foto a Activas. Tras borrar el objeto del directorio que sustituía al bucket y volver a archivar, restaurar mostró el aviso «El archivo original ya no está disponible» y la foto siguió archivada. El controlador responde 422 con ese mensaje; la misma aserción pasó en la suite de PostgreSQL.
+- Orden `CO-2-2026-0001`, «Muro de verificación», 180000 centavos y 2 días. La supervisora la creó, la envió y abrió la revisión en Filament. El administrador la aprobó. El alcance quedó con `approved_change_orders_cents = 180000` y `approved_time_impact_days = 2`. El widget del alcance mostró «Change Orders aprobadas» y «$1,800.00 · 2 días».
+- Orden `CO-2-2026-0002`, «Crédito rechazado», -25000 centavos (Filament muestra $-250.00) y -1 día. El administrador la envió, abrió la revisión y la rechazó con motivo «Fuera de presupuesto». En `/change-orders/2` la línea de tiempo dice `Rechazada: 2026-11-21T17:28:36-05:00 · Fuera de presupuesto`. `php artisan queue:work --stop-when-empty` entregó `ChangeOrderRejectedNotification` al solicitante (usuario 3), con `reason` en la notificación de base de datos y «Motivo: Fuera de presupuesto» en el log de correo.
+- «Nuevo» en `/change-orders` apunta a `/admin/change-orders/create`. El formulario guarda el entero en centavos: 180000 se lee como $1,800.00 y -25000 como $-250.00. El listado React pinta el mismo valor con `toFixed(2)`, sin separador de miles (`$1800.00`).
+
+Durante el pase, el detalle React de una orden rechazada no mostraba el motivo: la entrada de la línea de tiempo llevaba `null` en el tercer campo. `resources/js/Pages/ChangeOrders/Show.tsx` ahora usa `order.rejection_reason`. `npx vitest run tests/Frontend/ChangeOrders.test.tsx` quedó en 2 pruebas verdes y `npm run build` compiló. No apareció otro defecto de producto. Los diálogos de confirmación de Filament 4 (`role="alertdialog"`) se anuncian ocultos a la automatización mientras están abiertos; el clic en el Confirm visible sí persistió el estado.
+
+### Catálogo de materiales
+
+El catálogo maestro sale de CWICR, el catálogo abierto de [Data-Driven Construction](https://github.com/datadrivenconstruction/openconstructionerp) (`data/catalog/cwicr_materials.csv`).
+
+**Licencia.** CWICR se publica bajo [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): uso no comercial, con atribución a Data-Driven Construction y al catálogo CWICR. Si este proyecto se usa con fines comerciales hace falta la licencia comercial de DDC; CC BY-NC 4.0 no la cubre. El CSV completo no se versiona. `.gitignore` excluye `database/data/cwicr_materials.csv`. No lo añadas al repositorio sin esta atribución.
+
+La tabla `materials` guarda `code`, `name`, `unit`, `category`, `is_active` y `notes`. No guarda precio, moneda ni stock: el pedido se gestiona fuera de esta aplicación. `unit` es `varchar(20)`. Alcanza para `kg`, `m3`, `m2`, `m`, `pcs`, `set`, `100m`, `100m2` y `1000pcs`. Una unidad propia más larga no cabe en la columna; hay que ampliarla antes de usarla. Las categorías se almacenan como en el CSV (`Steel & Metal`, `Concrete & Cement`, `Electrical`, `Paint & Coatings`, `Wood & Timber`, `Fasteners`, `Pipes & Fittings`, `Insulation`, `Waterproofing`, `Aggregates & Earth`, `Glass & Glazing`, `General`). No se traducen a oficios. El Select de Filament leerá `config/materials.php`, la misma lista.
+
+La migración `2026_11_21_260000_reshape_materials_catalog` conserva el `id`. Así, `material_list_items.material_id` sigue apuntando a la misma fila. Si el `sku` anterior tenía texto, `code` queda con ese valor recortado y `notes` queda `legacy_sku: X`. Si el `sku` estaba vacío, `code` es `MAT-` más diez caracteres de `sha1(name|unit|General)` y `notes` queda vacía. El precio y el stock antiguos no se copian.
+
+`Material::withoutManualAudit()` pone en falso el flag que lee `MaterialObserver` antes de escribir en `activity_log`, y lo restaura al salir, también si la operación falla. Una actualización de catálogo dentro de ese cierre no crea filas de actividad. Una edición manual de `name`, `unit`, `category` o `is_active` sí. `MaterialImportService` escribe dentro de ese cierre.
+
+El CSV se lee con `league/csv`, dependencia directa `^9.29` en `composer.json` (instalada 9.29.0). Esa restricción no admite 10.x: un `composer update` no cambia la API de `Reader`. La cabecera tiene que incluir `code`, `name`, `category` y `unit`. `base_price`, `min_price`, `max_price`, `currency` y el resto de columnas se ignoran. No hay `homedepot_sku`.
+
+Descarga el catálogo completo desde [cwicr_materials.csv](https://github.com/datadrivenconstruction/openconstructionerp/blob/main/data/catalog/cwicr_materials.csv) y guárdalo en `database/data/cwicr_materials.csv`. Ese archivo está en `.gitignore`. El ejemplo versionado es `database/data/cwicr_materials_sample.csv` (10 filas).
+
+~~~powershell
+php artisan materials:import-cwicr
+php artisan materials:import-cwicr database/data/cwicr_materials_sample.csv --dry-run
+php artisan materials:import-cwicr --truncate --force
+~~~
+
+`--dry-run` cuenta altas, cambios y omisiones sin abrir transacción y sin escribir. `--truncate` borra `materials` antes de importar y solo corre con `--force` o con una confirmación interactiva. `--force` solo salta la pregunta; no salta la clave foránea. Sin `--force` y sin interacción, el comando termina en error y no borra nada. El borrado va en la misma transacción que la carga. No toca `material_list_items`: si una lista todavía apunta a un material, la clave foránea rechaza el borrado, la transacción se revierte y el comando dice cuántos materiales están referenciados. La salida indica eliminar esas listas o importar sin `--truncate`, para actualizar el catálogo sin borrarlo. Volver a importar el mismo CSV actualiza `name`, `unit` y `category` del `code` existente. No cambia `is_active` ni `notes`, así que un `legacy_sku` y un material desactivado sobreviven. Si el mismo `code` aparece dos veces en el archivo, gana la última fila: el CSV es la fuente de verdad. No se omite como duplicado. Una fila sin `name` se omite. Si `category` viene vacía se usa `General`; si `unit` viene vacía se usa `pcs`. Si `code` viene vacío, el código es `MAT-` más diez caracteres de `sha1(name|unit|category)`. Un `name` de más de 255, un `unit` de más de 20, un `category` de más de 100 o un `code` de más de 255 se omite y no se recorta. Cada fila así deja un `Log::warning` con la fila y el campo, y al final hay otro con el total y los `codes`. El proceso lee de 500 en 500 filas. En un terminal interactivo el comando muestra una barra de avance. `Total` en la salida es la suma de importados, actualizados y omitidos, no el conteo de la tabla.
+
+### Catálogo de materiales — Filament
+
+Un material que CWICR no trae se crea en Filament, en Materiales. El código se escribe una vez. La unidad y la categoría salen de la lista CWICR; «Otra» abre un texto de hasta 20 caracteres para la unidad y 100 para la categoría. Las notas admiten 2000 caracteres. Activar o desactivar en masa es una edición manual y queda en la bitácora. Eliminar pide confirmación y no procede si una lista todavía referencia el material: el aviso pide desactivarlo. La página «Importar materiales» sube un CSV y llama a `MaterialImportService` sin `--truncate`. Solo quien puede `MaterialPolicy@import` (Super Admin y Administrador) la abre. El supervisor consulta el catálogo y no lo crea. La licencia CWICR de esta misma sección sigue aplicando a ese archivo.
+
+En el tablero, el resumen muestra el total, los activos, cuántos materiales están en alguna lista y las cinco categorías con más filas. Si el mismo `code` aparece dos veces en el CSV, gana la última fila.
+
+### Catálogo de materiales — API de lectura
+
+No hay endpoints de escritura. El catálogo se cambia en Filament o con `materials:import-cwicr`. Las cuatro rutas exigen `MaterialPolicy@viewAny` y admiten 60 solicitudes por minuto (`materials-read`). Carpintero y Ayudante reciben 403. Un id inexistente, para quien sí puede consultar, recibe 404.
+
+- `GET /api/materials?category=&search=&active=1&page=&per_page=`
+- `GET /api/materials/{material}`
+- `GET /api/materials/categories`
+- `GET /api/materials/units`
+
+`active` vale `1` si no se envía: solo materiales activos. `active=0` devuelve solo inactivos. `active=all` devuelve todos. Otro valor responde 422. `per_page` vale 20 y no puede pasar de 100; fuera de 1–100 responde 422. El orden es `name` ascendente. Cada material incluye `notes` (`null` si está vacío) y `list_items_count`.
+
+~~~json
+{
+  "data": [
+    {
+      "id": 1,
+      "code": "MAT-0001",
+      "name": "Structural steel beam",
+      "unit": "kg",
+      "category": "Steel & Metal",
+      "is_active": true,
+      "notes": null,
+      "list_items_count": 0
+    }
+  ]
+}
+~~~
+
+`/api/materials/categories` y `/api/materials/units` cuentan solo activos:
+
+~~~json
+{ "data": [{ "value": "Steel & Metal", "label": "Steel & Metal", "count": 12 }] }
+~~~
+
+El origen y la licencia CC BY-NC 4.0, con la nota de licencia comercial DDC, están en la sección anterior del catálogo CWICR.
+
+### Listas de materiales
+
+Una lista pertenece a un alcance. El código es `ML-{obra}-{año}-{secuencia}` y el contador usa `lockForUpdate`, igual que las órdenes de cambio. En SQLite ese bloqueo no espera a otra conexión; la secuencia se comprueba en PostgreSQL 16. El estado `pending` de la tabla original sigue existiendo para el tablero de asignaciones. Las listas nuevas no lo usan.
+
+```text
+draft --enviada por el solicitante o un admin--> submitted
+submitted --aprobada por un admin, o por el supervisor de la obra si el total pedido cabe en el umbral--> approved
+submitted --cancelada por el solicitante o un admin--> cancelled
+approved --ordenada por un admin o el supervisor de la obra--> ordered
+ordered --entrega registrada por un admin o el supervisor de la obra--> delivered
+ordered --cancelada solo por un admin--> cancelled
+approved --cancelada solo por un admin--> cancelled
+delivered --consumo parcial--> partially_consumed
+delivered --todo consumido de una vez--> consumed
+partially_consumed --el resto consumido--> consumed
+consumed --sin salida; haría falta una lista de ajuste-->
+```
+
+El umbral del supervisor está en `config/material_lists.php`: 250000 centavos, 2500 dólares. Si alguna línea no tiene `unit_cost_cents`, el total es null y el supervisor no puede aprobar. El consumo no se copia de la entrega: el supervisor lo escribe. `partially_consumed` queda cuando hay consumo mayor que cero y alguna línea todavía no alcanza lo entregado. `consumed` exige `consumed_quantity >= delivered_quantity` en todas las líneas. `unit_cost_cents` es un apunte opcional de la factura. Este bloque no calcula totales automáticos con él; solo lo muestra. Si falta, la pantalla dice «sin costos».
+
+Una transición que el estado no permite responde 422, con `from`, `to` y `allowed`, igual que las órdenes de cambio. Quien no tiene permiso recibe 403. Un id que no existe recibe 404. Carpintero y Ayudante no entran a la API ni a Filament. El tablero viejo sigue mostrando una lista `pending` asignada a su usuario; eso no abre el flujo nuevo.
+
+La lectura admite 60 solicitudes por minuto y la escritura 30. No hay endpoints de proveedor.
+
+- `GET /api/material-lists?job_site_id=&job_scope_id=&status=`
+- `POST /api/material-lists`
+- `GET /api/material-lists/{list}`
+- `PATCH /api/material-lists/{list}` solo en borrador
+- `POST /api/material-lists/{list}/submit|approve|mark-ordered|register-delivery|register-consumption|cancel`
+
+En React, «Nueva» abre el formulario de Filament. La ficha del alcance tiene la pestaña Materiales, que lleva al índice filtrado por ese alcance. Borrar desde la interfaz no está permitido. Un administrador puede hacer `forceDelete` si hace falta retirar el registro.
+
+### Frontend React — mapa de navegación
+
+Hay dos layouts. `GuestLayout` es el de Breeze y solo envuelve login, registro y recuperación de contraseña. `AppLayout` es el único layout autenticado: dashboard, calendario, órdenes, listas, ficha de alcance y perfil. `AuthenticatedLayout` se eliminó; era un alias de `AppLayout` y el nombre parecía el layout viejo de Breeze.
+
+La página del tablero es `resources/js/Pages/Dashboard.tsx`. Si existieran `Dashboard.jsx` y `Dashboard.tsx` a la vez, `app.jsx` lanza un error en lugar de elegir uno en silencio.
+
+`AppLayout` en escritorio es una barra lateral que se puede contraer. Por debajo de 768 px pasa a una barra inferior.
+
+```text
+Carpintero / Ayudante: Dashboard, Mis turnos, Fichaje
+Supervisor:            Dashboard, Mis obras, Turnos, Change Orders, Materiales, Fotos
+Administrador:         lo del supervisor + Catálogo de materiales + Filament (/admin)
+```
+
+El encabezado muestra el nombre, el rol y, si hay más de una obra, el selector de obra activa. Esa obra se guarda en `localStorage` con la clave `obra-activa`. Al cambiarla, la página actual se vuelve a pedir sin conservar el estado local y con `job_site_id` en la URL. Los enlaces de Turnos, Change Orders y Materiales también llevan ese parámetro. El calendario y los índices lo leen de la URL; si la URL no lo trae, usan la obra guardada. El formulario de filtro se actualiza cuando el servidor devuelve otro `job_site_id`.
+
+El perfil del dashboard (`worker`, `supervisor`, `admin`) se calcula solo en `OperationsDashboardController`, con el rol de Spatie que esa petición ya cargó. No está en los props compartidos. Lo que sí va en cada respuesta Inertia es `auth.role` (el primer nombre de rol) y `auth.sites` (hasta 50 obras, id y nombre). Esa lista se guarda 60 segundos por usuario. Las pruebas vacían la caché en `Tests\TestCase` para que un id reutilizado no herede obras de otro caso.
+
+El dashboard cambia de bloque según el perfil que manda el servidor: el trabajador ve el turno de hoy y el fichaje; el supervisor, accesos a fotos, turnos, órdenes y listas; el administrador, el conteo de obras, listas pendientes y la alerta de geocerca si el fichaje abierto la marcó. Los permisos de cada botón siguen viniendo de `can_*`.
+
+### Manejo de errores
+
+`apiErrorMessage` traduce la respuesta antes del toast:
+
+| Código | Mensaje |
+| --- | --- |
+| 401 | Sesión expirada. Vuelve a iniciar sesión. |
+| 403 | Sin permisos para esta acción. |
+| 404 | El recurso ya no existe. |
+| 409 | El mensaje del backend |
+| 422 | El primer error de `errors`, o el mensaje del backend |
+| 429 | Demasiadas solicitudes. Espera un momento. |
+| 500 | Error del servidor. Intenta de nuevo. |
+| Sin respuesta | Error de conexión. |
+
+Un 401 también redirige a `/login?returnTo=` con la ruta actual. Un 429 lee `Retry-After` y lo muestra en segundos.
+
+### Accesibilidad
+
+Los botones de fichaje y de navegación miden al menos 48 px. Los diálogos usan el foco atrapado de Headless UI, se cierran con Escape y declaran `aria-modal`. Los filtros tienen `label`, no solo placeholder. Los badges de estado usan texto `slate-950` sobre `slate-200`. El texto de un turno cancelado es `#1F2937` sobre `#F3F4F6`. `prefers-reduced-motion` anula animaciones y transiciones. El calendario abre en `listWeek` si el ancho es menor de 768 px y mantiene `America/New_York`.
+
+`@axe-core/react` no está instalado. Este bloque no tiene una auditoría formal de cumplimiento, así que el checklist de arriba es la verificación. Para una revisión institucional: `npm install -D axe-core @axe-core/react` y, en un test, `const { default: axe } = await import('axe-core')` sobre el contenedor renderizado.
 

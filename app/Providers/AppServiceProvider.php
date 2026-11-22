@@ -2,12 +2,11 @@
 
 namespace App\Providers;
 
-use App\Models\ChangeOrder;
-use App\Models\JobScope;
 use App\Models\MaterialList;
 use App\Models\MaterialListItem;
 use App\Policies\LogisticsRecordPolicy;
 use App\Policies\ManagementRolePolicy;
+use App\Policies\MaterialListPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -31,9 +30,40 @@ class AppServiceProvider extends ServiceProvider
             $request->user()?->getAuthIdentifier() ?? $request->ip(),
         ));
 
-        foreach ([ChangeOrder::class, JobScope::class, MaterialList::class, MaterialListItem::class] as $model) {
-            Gate::policy($model, LogisticsRecordPolicy::class);
-        }
+        RateLimiter::for('logistics-read', fn (Request $request) => Limit::perMinute(60)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        RateLimiter::for('scope-photo-read', fn (Request $request) => Limit::perMinute(60)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        RateLimiter::for('scope-photo-write', fn (Request $request) => Limit::perMinute(30)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        RateLimiter::for('materials-read', fn (Request $request) => Limit::perMinute(60)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        RateLimiter::for('change-order-read', fn (Request $request) => Limit::perMinute(60)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        RateLimiter::for('change-order-write', fn (Request $request) => Limit::perMinute(30)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        RateLimiter::for('material-list-read', fn (Request $request) => Limit::perMinute(60)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        RateLimiter::for('material-list-write', fn (Request $request) => Limit::perMinute(30)->by(
+            $request->user()?->getAuthIdentifier() ?? $request->ip(),
+        ));
+
+        Gate::policy(MaterialList::class, MaterialListPolicy::class);
+        Gate::policy(MaterialListItem::class, LogisticsRecordPolicy::class);
 
         Gate::policy(Role::class, ManagementRolePolicy::class);
     }

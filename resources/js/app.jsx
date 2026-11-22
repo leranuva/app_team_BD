@@ -11,10 +11,12 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => {
         const pages = import.meta.glob(['./Pages/**/*.jsx', './Pages/**/*.tsx']);
-        return resolvePageComponent(
-            [`./Pages/${name}.jsx`, `./Pages/${name}.tsx`],
-            pages,
-        );
+        const jsx = `./Pages/${name}.jsx`;
+        const tsx = `./Pages/${name}.tsx`;
+        if (pages[jsx] && pages[tsx]) {
+            throw new Error(`Página duplicada: ${name}. Deja solo ${name}.tsx.`);
+        }
+        return resolvePageComponent([jsx, tsx], pages);
     },
     setup({ el, App, props }) {
         const root = createRoot(el);

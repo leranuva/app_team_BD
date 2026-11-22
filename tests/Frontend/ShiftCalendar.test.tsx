@@ -7,7 +7,7 @@ import Calendar from '@/Pages/Shifts/Calendar';
 
 const revert = vi.hoisted(() => vi.fn());
 
-vi.mock('@/Layouts/AuthenticatedLayout', () => ({
+vi.mock('@/Layouts/AppLayout', () => ({
     default: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }));
 vi.mock('@inertiajs/react', () => ({ Head: () => null }));
@@ -211,6 +211,15 @@ describe('shift calendar', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Consultar mismo rango' }));
         expect(axios.get).toHaveBeenCalledTimes(2);
         expect(vi.mocked(window.matchMedia).mock.calls.filter(([query]) => query === '(pointer: coarse)')).toHaveLength(1);
+    });
+
+    it('requests the site carried in the url after an active-site change', async () => {
+        window.history.replaceState(null, '', '/shifts/calendar?job_site_id=9&status=programmed');
+        render(<Calendar options={{ ...options, job_sites: [...options.job_sites, { id: 9, name: 'Queens' }] }} canEdit timeZone="America/New_York" />);
+        await waitFor(() => expect(axios.get).toHaveBeenCalledWith('/api/shifts', expect.objectContaining({
+            params: expect.objectContaining({ job_site_id: '9', status: 'programmed' }),
+        })));
+        expect((screen.getByRole('combobox', { name: 'Obra' }) as HTMLSelectElement).value).toBe('9');
     });
 
     it('renders a read-only calendar for a read-only account', async () => {

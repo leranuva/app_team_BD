@@ -113,6 +113,8 @@ class ScopePhotosRelationManager extends RelationManager
             ->authorize(fn () => Gate::allows('create', [ScopePhoto::class, $this->getOwnerRecord()]))
             ->databaseTransaction(false)
             ->schema([
+                // storeFiles(false) evita que Filament persista una ruta propia. El archivo temporal
+                // se entrega a ScopePhotoService::store(), que crea el objeto UUID y lee MIME y tamaño desde S3.
                 FileUpload::make('path')->label('Imagen')->disk('s3')->visibility('private')
                     ->image()->maxSize(10240)->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                     ->required()->preventFilePathTampering()->storeFiles(false),

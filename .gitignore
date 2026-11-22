@@ -24,6 +24,7 @@
 /vendor
 /database/*.sqlite
 /database/*.sqlite-journal
+/database/data/cwicr_materials.csv
 Homestead.json
 Homestead.yaml
 Thumbs.db

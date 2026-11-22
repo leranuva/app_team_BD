@@ -1,4 +1,4 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AppLayout from '@/Layouts/AppLayout';
 import { Head } from '@inertiajs/react';
 import FullCalendar from '@fullcalendar/react';
 import type { EventClickArg, EventDropArg, EventInput, EventMountArg, EventSourceFunc } from '@fullcalendar/core';
@@ -14,6 +14,8 @@ import ShiftDetailModal from '@/Components/Shifts/ShiftDetailModal';
 import { reassignShift, type Filters, type ShiftEvent } from './calendarApi';
 import { useShiftsFeed } from './useShiftsFeed';
 import { shiftAppearance } from '@/features/shifts/shiftColors';
+import LoadingState from '@/Components/LoadingState';
+import { readActiveSite, writeActiveSite } from '@/lib/activeSite';
 
 const plugins = [dayGrid, timeGrid, list, interaction, luxon];
 
@@ -33,8 +35,10 @@ function readFilters(sites: Option[], options: Options): Filters {
         return valid.some((option) => option.value === value) ? value : '';
     }
 
+    const stored = readActiveSite();
+
     return {
-        job_site_id: selectValue('job_site_id', sites),
+        job_site_id: selectValue('job_site_id', sites) || (sites.some((site) => site.value === stored) ? stored : ''),
         role_required: selectValue('role_required', options.roles),
         status: selectValue('status', options.statuses),
         worker_id: /^[1-9]\d*$/.test(params.get('worker_id') ?? '') ? params.get('worker_id')! : '',
@@ -63,11 +67,15 @@ function FilterSelect({ label, defaultLabel, options, value, onChange }: {
     );
 }
 
+export function calendarInitialView(desktop: boolean): 'timeGridWeek' | 'listWeek' {
+    return desktop ? 'timeGridWeek' : 'listWeek';
+}
+
 export default function Calendar({ options, canEdit, timeZone }: { options: Options; canEdit: boolean; timeZone: string }) {
     const sites = options.job_sites.map(({ id, name }) => ({ value: String(id), label: name }));
     const [filters, setFilters] = useState(() => readFilters(sites, options));
     const [touch] = useState(() => window.matchMedia('(pointer: coarse)').matches);
-    const [initialView] = useState(() => window.matchMedia('(min-width: 768px)').matches ? 'timeGridWeek' : 'listWeek');
+    const [initialView] = useState(() => calendarInitialView(window.matchMedia('(min-width: 768px)').matches));
     const [selected, setSelected] = useState<ShiftEvent | null>(null);
     const [pending, setPending] = useState<number | null>(null);
     const calendar = useRef<FullCalendar>(null);
@@ -180,11 +188,14 @@ export default function Calendar({ options, canEdit, timeZone }: { options: Opti
     }
 
     function changeFilter(key: keyof Filters, value: string) {
+        if (key === 'job_site_id') {
+            writeActiveSite(value);
+        }
         setFilters((previous) => ({ ...previous, [key]: value }));
     }
 
     return (
-        <AuthenticatedLayout>
+        <AppLayout>
             <Head title="Calendario de turnos" />
             <Toaster id="shifts" containerAriaLabel="Avisos del calendario" />
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
@@ -198,7 +209,7 @@ export default function Calendar({ options, canEdit, timeZone }: { options: Opti
                         value={filters.status} onChange={(value) => changeFilter('status', value)} />
                 </section>
                 <section aria-label="Turnos programados" className="mt-5 rounded-xl border border-slate-200 bg-white p-3 sm:p-5">
-                    <div aria-live="polite" role="status" className="text-sm text-slate-700">{loading ? 'Cargando turnos…' : ''}</div>
+                    {loading ? <LoadingState label="Cargando turnos…" /> : null}
                     {failure && (
                         <div role="alert" className="my-3 flex flex-wrap items-center gap-3 rounded-lg bg-amber-50 p-3 text-sm text-slate-900">
                             <span>{failure.message}</span>
@@ -226,6 +237,6 @@ export default function Calendar({ options, canEdit, timeZone }: { options: Opti
                 statusLabel={options.statuses.find((status) => status.value === selected.status)?.label ?? '—'}
                 roleLabel={options.roles.find((role) => role.value === selected.role_required)?.label ?? '—'}
                 onClose={() => setSelected(null)} onSave={(start, end) => save(selected, start, end)} />}
-        </AuthenticatedLayout>
+        </AppLayout>
     );
 }

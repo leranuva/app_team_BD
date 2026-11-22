@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Exceptions;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use RuntimeException;
+
+class InvalidChangeOrderTransitionException extends RuntimeException
+{
+    public function __construct(
+        public readonly string $from,
+        public readonly string $to,
+        public readonly array $allowed,
+    ) {
+        parent::__construct("No se puede pasar de {$from} a {$to}.");
+    }
+
+    public function render(Request $request): JsonResponse
+    {
+        return response()->json([
+            'message' => $this->getMessage(),
+            'from' => $this->from,
+            'to' => $this->to,
+            'allowed' => $this->allowed,
+        ], 422);
+    }
+}

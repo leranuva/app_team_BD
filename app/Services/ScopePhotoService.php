@@ -94,6 +94,23 @@ class ScopePhotoService
         return $this->setArchived($photo, $actor, false);
     }
 
+    public function updateCaption(ScopePhoto $photo, User $actor, ?string $caption): ScopePhoto
+    {
+        $caption = $this->caption($caption);
+
+        return DB::transaction(function () use ($photo, $actor, $caption): ScopePhoto {
+            $record = ScopePhoto::withoutGlobalScope(LogisticsVisibilityScope::class)->lockForUpdate()->findOrFail($photo->id);
+            Gate::forUser($actor)->authorize('view', $record);
+            Validator::make(['caption' => $caption], ['caption' => ['nullable', 'string', 'max:500']])->validate();
+
+            if ($record->caption !== $caption) {
+                $record->recordedBy($actor)->forceFill(['caption' => $caption])->save();
+            }
+
+            return $record;
+        }, attempts: 3);
+    }
+
     private function setArchived(ScopePhoto $photo, User $actor, bool $archive, ?string $reason = null): ScopePhoto
     {
         return DB::transaction(function () use ($photo, $actor, $archive, $reason): ScopePhoto {
@@ -118,6 +135,13 @@ class ScopePhotoService
 
             return $record;
         }, attempts: 3);
+    }
+
+    private function caption(?string $caption): ?string
+    {
+        $caption = $caption === null ? null : trim($caption);
+
+        return $caption === '' ? null : $caption;
     }
 
     private function exifTakenAt(UploadedFile $file, string $mime): ?CarbonImmutable

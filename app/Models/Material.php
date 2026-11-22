@@ -2,24 +2,43 @@
 
 namespace App\Models;
 
+use App\Observers\MaterialObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
+#[ObservedBy(MaterialObserver::class)]
 class Material extends Model
 {
-    use LogsActivity, SoftDeletes;
+    use HasFactory;
 
-    protected $fillable = ['sku', 'name', 'unit', 'unit_cost', 'supplier', 'minimum_stock'];
+    private static bool $auditManualEdits = true;
+
+    protected $fillable = ['code', 'name', 'unit', 'category', 'is_active', 'notes'];
+
+    public static function withoutManualAudit(callable $callback): mixed
+    {
+        $previous = self::$auditManualEdits;
+        self::$auditManualEdits = false;
+
+        try {
+            return $callback();
+        } finally {
+            self::$auditManualEdits = $previous;
+        }
+    }
+
+    public static function auditsManualEdits(): bool
+    {
+        return self::$auditManualEdits;
+    }
 
     protected function casts(): array
     {
         return [
-            'unit_cost' => 'decimal:2',
-            'stock' => 'decimal:3',
-            'minimum_stock' => 'decimal:3',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -28,11 +47,27 @@ class Material extends Model
         return $this->hasMany(MaterialListItem::class);
     }
 
-    public function getActivitylogOptions(): LogOptions
+    public function scopeActive(Builder $query): Builder
     {
-        return LogOptions::defaults()
-            ->logOnly(['sku', 'name', 'unit', 'unit_cost', 'supplier', 'stock', 'minimum_stock'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
+        return $query->where('is_active', true);
+    }
+
+    public function scopeByCategory(Builder $query, string $category): Builder
+    {
+        return $query->where('category', $category);
+    }
+
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $like = '%'.addcslashes($term, '%_\\').'%';
+
+        return $query->where(function (Builder $query) use ($like): void {
+            $query->where('name', 'like', $like)->orWhere('code', 'like', $like);
+        });
+    }
+
+    public function displayLabel(): string
+    {
+        return "{$this->name} ({$this->unit})";
     }
 }

@@ -32,4 +32,18 @@ class JobSitePolicy
     {
         return $this->update($user, $site);
     }
+
+    public function readAny(User $user): bool
+    {
+        return $user->is_active && $user->canAny([
+            LogisticsPermission::GlobalAccess->value,
+            LogisticsPermission::SuperviseSites->value,
+            LogisticsPermission::ViewAssignments->value,
+        ]);
+    }
+
+    public function read(User $user, JobSite $site): bool
+    {
+        return $this->readAny($user) && JobSite::readableBy($user)->whereKey($site->id)->exists();
+    }
 }

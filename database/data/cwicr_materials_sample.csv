@@ -1,0 +1,11 @@
+code,name,category,unit
+MAT-0001,Structural steel beam,Steel & Metal,kg
+MAT-0002,Ready-mix concrete C25/30,Concrete & Cement,m3
+MAT-0003,Copper wire 2.5mm²,Electrical,m
+MAT-0004,Interior latex paint white,Paint & Coatings,gal
+MAT-0005,SPF lumber 2x4x8,Wood & Timber,pcs
+MAT-0006,Wood screws 3x30mm,Fasteners,1000pcs
+MAT-0007,PVC pipe 50mm,Pipes & Fittings,m
+MAT-0008,Mineral wool insulation 100mm,Insulation,m2
+MAT-0009,Bituminous waterproofing membrane,Waterproofing,m2
+MAT-0010,Sand 0/4,Aggregates & Earth,m3

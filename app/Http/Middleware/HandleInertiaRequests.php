@@ -2,7 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\LogisticsPermission;
+use App\Models\JobSite;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -29,10 +32,26 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $sites = $user && $user->canAny([
+            LogisticsPermission::GlobalAccess->value,
+            LogisticsPermission::SuperviseSites->value,
+        ])
+            ? Cache::remember(
+                'inertia.auth.sites.'.$user->getKey(),
+                60,
+                fn (): array => JobSite::visibleTo($user)->orderBy('name')->limit(50)->get(['id', 'name'])
+                    ->map(fn (JobSite $site): array => ['id' => $site->id, 'name' => $site->name])
+                    ->all(),
+            )
+            : [];
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user()?->only(['id', 'name', 'email']),
+                'user' => $user?->only(['id', 'name', 'email']),
+                'role' => $user?->getRoleNames()->first(),
+                'sites' => $sites,
             ],
         ];
     }
