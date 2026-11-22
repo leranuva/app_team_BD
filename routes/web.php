@@ -6,12 +6,24 @@ use App\Http\Controllers\MaterialListPageController;
 use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ShiftCalendarController;
+use App\Http\Controllers\SupervisorHoursController;
+use App\Http\Controllers\SupervisorScopeProgressController;
+use App\Http\Controllers\SupervisorTeamController;
+use App\Http\Controllers\WorkerHistoryController;
+use App\Http\Controllers\WorkerScheduleController;
+use App\Http\Controllers\WorkerTodayController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', OperationsDashboardController::class)->name('dashboard');
+    Route::get('/worker/today', WorkerTodayController::class)->name('worker.today');
+    Route::get('/worker/schedule', WorkerScheduleController::class)->name('worker.schedule');
+    Route::get('/worker/history', WorkerHistoryController::class)->name('worker.history');
+    Route::get('/supervisor/team', SupervisorTeamController::class)->name('supervisor.team');
+    Route::get('/supervisor/scopes', SupervisorScopeProgressController::class)->name('supervisor.scopes');
+    Route::get('/supervisor/hours', SupervisorHoursController::class)->name('supervisor.hours');
     Route::get('/shifts/calendar', [ShiftCalendarController::class, 'index'])->name('shifts.calendar');
     Route::get('/job-scopes/{scope}', [JobScopeController::class, 'show'])->whereNumber('scope')->name('job-scopes.show');
     Route::get('/material-lists', [MaterialListPageController::class, 'index'])->name('material-lists.index');

@@ -446,8 +446,8 @@ La página del tablero es `resources/js/Pages/Dashboard.tsx`. Si existieran `Das
 `AppLayout` en escritorio es una barra lateral que se puede contraer. Por debajo de 768 px pasa a una barra inferior.
 
 ```text
-Carpintero / Ayudante: Dashboard, Mis turnos, Fichaje
-Supervisor:            Dashboard, Mis obras, Turnos, Change Orders, Materiales, Fotos
+Carpintero / Ayudante: Hoy, Mi semana, Historial, Dashboard, Mis turnos, Fichaje
+Supervisor:            Dashboard, Equipo, Avance, Horas, Mis obras, Turnos, Change Orders, Materiales, Fotos
 Administrador:         lo del supervisor + Catálogo de materiales + Filament (/admin)
 ```
 
@@ -480,7 +480,65 @@ Los botones de fichaje y de navegación miden al menos 48 px. Los diálogos usan
 
 `@axe-core/react` no está instalado. Este bloque no tiene una auditoría formal de cumplimiento, así que el checklist de arriba es la verificación. Para una revisión institucional: `npm install -D axe-core @axe-core/react` y, en un test, `const { default: axe } = await import('axe-core')` sobre el contenedor renderizado.
 
+## Experiencia de campo (trabajador)
 
+`/worker/today`, `/worker/schedule` y `/worker/history` cubren la jornada, la semana y las últimas cuatro semanas de asistencia. La zona mostrada es `America/New_York`. Hoy reutiliza el mismo panel de fichaje del tablero: geolocalización al pulsar, entrada y salida por `POST /api/attendances/clock-in` y `clock-out`.
+
+Los materiales de Hoy no tienen una clave hacia el turno. La página muestra ítems solo cuando el trabajador tiene una lista asignada cuyo alcance es el del turno de hoy. Si el turno no tiene alcance, o no hay ítems, esa sección no se pinta.
+
+Deuda: vincular el ítem al turno (`shift_id` en `material_list_items`) para que el trabajador vea solo lo de su turno. Hoy la condición es la lista asignada al alcance; si esa columna llega a existir, esta consulta tiene que cambiar.
+
+### Fichaje sin conexión
+
+Si `navigator.onLine` es `false` al pulsar el botón, el navegador guarda en `localStorage` la clave `pending-clock-in` con `shift_id`, `timestamp`, `lat`, `lng`, `accuracy` y `direction` (`in` o `out`). El aviso es «Fichaje pendiente de sincronizar. Se enviará cuando recuperes conexión.» Al evento `online`, el mismo botón reintenta el POST. Un 422 borra el pendiente y pide contactar al supervisor: la ventana de fichaje ya no admite ese instante y no hay corrección desde esta pantalla.
+
+No hay Service Worker ni Background Sync. Un fichaje pendiente solo sale si la página está abierta cuando vuelve la red. Esa sincronización en segundo plano queda como deuda.
+
+Hoy, la semana y el botón de fichaje usan texto `slate-950` sobre `slate-100`, cuerpo de 16 px y la acción principal de al menos 64 px, sin depender de hover. El historial no pide fotos.
+
+### PWA
+
+`public/manifest.json` declara el nombre, `display: standalone` y `app.blade.php` lo enlaza. `theme_color` es `#020617`, el mismo `slate-950` del encabezado y de los botones primarios. `background_color` es `#f1f5f9` (`slate-100`). Los iconos son PNG reales: `public/icons/icon-192.png` (192×192) y `public/icons/icon-512.png` (512×512). No hay Service Worker: sin él no hay caché offline ni reintento con la página cerrada, y añadirlo ahora mezclaría la sesión de Sanctum con una caché que todavía no tenemos criterio para invalidar.
+
+## Experiencia del supervisor
+
+`/supervisor/team` lista carpinteros y ayudantes de las obras visibles, con el estado de hoy: sin turno, turno programado, fichado, fuera de geocerca o turno completado. El filtro de obra usa `job_site_id` y, si la URL no lo trae, la obra activa guardada en el navegador. La lista se vuelve a pedir cada 60 segundos con `router.reload({ only: ['team'] })`. El intervalo se cancela al desmontar la página y al cambiar `jobSiteId`, así que salir al calendario no deja un refresco huérfano. Ese reload es la propia página Inertia, no `GET /api/shifts` ni `/api/shifts/options`, y no comparte su cuota. No hay WebSockets.
+
+«Corregir asistencia» solo se pinta si `can_correct` es verdadero. El detalle del endpoint está en «Corrección de asistencia».
+
+`/supervisor/scopes` muestra avance, responsable, tres fotos recientes, turnos de hoy, órdenes en revisión y listas en estado `pending` o `submitted`. «Actualizar avance» hace `PATCH /api/job-scopes/{scope}` con `{ progress }`. Autoriza `JobScopePolicy@update` y repite la regla de Filament: 100 % solo si el alcance ya está `completed`. Este PATCH no cambia el estado; completar el alcance sigue en Filament.
+
+`/supervisor/hours` lista las asistencias de la semana (lunes a lunes en Nueva York) con minutos regulares y extra. No hay botón de aprobar. La columna que pediría esa acción, `approved_by_supervisor_at`, no existe. `approved_at` y `approved_by` sí están en la tabla, pero no hay flujo ni policy que los usen, así que conectarlos aquí sería una regla nueva.
+
+## Corrección de asistencia
+
+`PATCH /api/attendances/{attendance}/correct` exige sesión Sanctum y admite 30 solicitudes por minuto. El cuerpo es `clock_in_at`, `clock_out_at` y `correction_reason`. Las dos horas van en ISO 8601 con offset; el request las normaliza a UTC. La salida tiene que ser posterior a la entrada. El motivo es obligatorio, de 10 a 500 caracteres.
+
+| Código | Resultado |
+| --- | --- |
+| 200 | `AttendanceResource` con los minutos recalculados, `status: corrected`, `corrected_by`, `correction_reason` y `can_correct`. |
+| 403 | Quien no supera `AttendancePolicy@correct`. |
+| 404 | El id no existe. |
+| 422 | Falta el motivo, tiene menos de 10 caracteres o la salida no es posterior. |
+
+Puede corregir un administrador, un super admin o el supervisor de la obra del turno. No puede el trabajador que fichó, aunque también sea supervisor de esa obra. `can_correct` se calcula en `AttendanceResource` con esa policy.
+
+El controlador solo autoriza, llama a `AttendanceService::flagManualCorrection` y serializa. Ese método guarda `corrected_by` y `correction_reason`, recalcula la fila y deja el motivo en la bitácora. Después de armar la respuesta se encola `RecalculateWeeklyHours` en la cola `attendance` para el resto de la semana de ese trabajador. `status` no es una columna: es `corrected` si hay `corrected_by`, `open` si falta la salida y `closed` en cualquier otro caso.
+
+## Reportes
+
+El supervisor descarga Excel. El PDF es el documento que se entrega. Un widget muestra el dato; no reemplaza al archivo. Filament no lee la obra activa del navegador. Horas abre la semana actual en Nueva York. Materiales, change orders y costo dejan el rango vacío, así que una orden pendiente de otra semana no desaparece.
+
+| Reporte | Formato | Filtros | Criterio | Quién lo ve |
+| --- | --- | --- | --- | --- |
+| Horas por empleado | Excel, descarga directa | Semana, obra, trabajador | Asistencias con salida, agrupadas por trabajador, obra y semana | Quien puede ver asistencias |
+| Materiales con bajo consumo | Excel | Obra, alcance, `delivered_at` | `consumed_quantity` menor que `delivered_quantity` × 0.5, en listas entregadas, con consumo parcial o consumidas | Administrador y supervisor |
+| Change orders pendientes | Excel | Obra, estado, `submitted_at` | `submitted` o `under_review` | Administrador y supervisor |
+| Costo real vs. presupuestado | PDF | Obra, rango | Presupuesto `job_sites.base_budget`. Costo real: change orders aprobadas más cantidad entregada × `unit_cost_cents` | Administrador y supervisor, solo obras visibles |
+
+`base_budget` ya estaba en la obra, en dólares. No se añadió `budget_cents`. Si el presupuesto es 0, el PDF dice «sin presupuesto» y no calcula el porcentaje. Un ítem sin `unit_cost_cents` no suma; el PDF indica cuántos quedaron fuera.
+
+El archivo se arma en `storage/framework/cache/laravel-excel` y se guarda en el disco privado `exports` (mismo bucket, prefijo `exports/`). Hasta 1000 filas se genera en la petición. Por encima, el job `GenerateReportExport` entra en la cola `reports` y avisa por correo y por la tabla `notifications`. El enlace firmado dura 15 minutos. `GET /api/reports/download/{uuid}` devuelve otro enlace si el registro no expiró y el usuario es el dueño: 200 con `url`, 403 si es de otro, 404 si no existe o expiró. `reports:cleanup` corre cada día y borra lo que cumplió 7 días.
 
 ## CI/CD
 
@@ -516,3 +574,30 @@ php artisan logistics:create-worker
 
 Elige el rol `Super Admin`. La contraseña pide al menos 12 caracteres. El comando pregunta nombre, correo y contraseña; no lee variables de entorno.
 
+## Deudas conocidas
+
+- `approved_by_supervisor_at` no existe. La aprobación de horas de `/supervisor/hours` sigue fuera del sistema. `approved_at` no se usa para eso.
+- No hay Service Worker ni Background Sync. El fichaje pendiente solo sale con la página abierta.
+- Falta el pase manual de la Fase 4 y del Bloque A de la Fase 5, en un móvil real para el GPS y en escritorio para los reportes.
+- El costo de materiales depende de `unit_cost_cents` cargado a mano. Sin ese valor, el PDF lo omite y lo cuenta en la nota.
+- El presupuesto base existe por obra (`job_sites.base_budget`), no por alcance.
+- No hay miniatura derivada: `url` y `thumbnail_url` firman el mismo archivo.
+- No hay página React de la obra. El detalle sigue en Filament.
+
+## Verificación manual Fase 4
+
+El código y las pruebas automatizadas de los bloques 1 y 2 están hechos. Falta una sesión de 30–40 minutos. El GPS y «Añadir a pantalla de inicio» se comprueban en un móvil real; el emulador no sirve para esos dos. El resto, en escritorio.
+
+Bloque 1
+
+1. Menú por rol y obra activa: un carpintero no ve Equipo ni Órdenes; un supervisor sí. Cambiar la obra en el selector la conserva al ir a Turnos.
+2. Dashboard por perfil: el trabajador ve el turno de hoy y el fichaje; el supervisor, los accesos; el administrador, el resumen y la alerta de geocerca si aplica.
+3. Estados: una lista vacía muestra el vacío con acción; un 401 vuelve a login; un 422 enseña el primer error, no una pantalla en blanco.
+4. Enlaces: desde el alcance se llega a órdenes, materiales y fotos. Por debajo de 768 px el calendario abre en lista semanal.
+
+Bloque 2
+
+5. Hoy, en el móvil: hora de Nueva York, mapa, fichaje con GPS y, si no hay turno, «No tienes turno asignado hoy».
+6. Mi semana es solo lectura y el historial muestra entrada, salida, duración y extra, sin fotos.
+7. Equipo: filtrar por obra, ver el estado de hoy, corregir una asistencia con motivo y comprobar que al salir de la página el refresco de 60 segundos se detiene.
+8. Avance: mover el porcentaje, rechazar 100 % si el alcance no está completado, y en el móvil añadir la app a la pantalla de inicio (icono y color `#020617`).

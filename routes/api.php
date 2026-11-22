@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\JobScopeController as JobScopeApiController;
 use App\Http\Controllers\Api\JobSiteController;
 use App\Http\Controllers\Api\MaterialController;
 use App\Http\Controllers\Api\MaterialListController;
+use App\Http\Controllers\Api\ReportDownloadController;
 use App\Http\Controllers\Api\ScopePhotoController;
 use App\Http\Controllers\Api\ShiftController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/clock-in', [AttendanceController::class, 'clockIn'])->name('api.attendances.clock-in');
         Route::post('/clock-out', [AttendanceController::class, 'clockOut'])->name('api.attendances.clock-out');
     });
+    Route::patch('/attendances/{attendance}/correct', [AttendanceController::class, 'correct'])
+        ->middleware('throttle:30,1')->whereNumber('attendance')->name('api.attendances.correct');
     Route::get('/shifts', [ShiftController::class, 'index'])->middleware('throttle:60,1')->name('api.shifts.index');
     Route::get('/shifts/options', [ShiftController::class, 'options'])->middleware('throttle:shift-options')->name('api.shifts.options');
     Route::patch('/shifts/{shift}/reassign', [ShiftController::class, 'reassign'])
@@ -29,6 +32,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->middleware('throttle:logistics-read')->name('api.job-scopes.index');
     Route::get('/job-scopes/{scope}', [JobScopeApiController::class, 'show'])
         ->middleware('throttle:logistics-read')->whereNumber('scope')->name('api.job-scopes.show');
+    Route::patch('/job-scopes/{scope}', [JobScopeApiController::class, 'update'])
+        ->middleware('throttle:logistics-read')->whereNumber('scope')->name('api.job-scopes.update');
 
     Route::get('/job-scopes/{scope}/photos', [ScopePhotoController::class, 'index'])
         ->middleware('throttle:scope-photo-read')->whereNumber('scope')->name('api.job-scopes.photos.index');
@@ -83,4 +88,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->middleware('throttle:change-order-write')->whereNumber('order')->name('api.change-orders.reject');
     Route::post('/change-orders/{order}/cancel', [ChangeOrderController::class, 'cancel'])
         ->middleware('throttle:change-order-write')->whereNumber('order')->name('api.change-orders.cancel');
+
+    Route::get('/reports/download/{reportExport}', ReportDownloadController::class)
+        ->middleware('throttle:logistics-read')->whereUuid('reportExport')->name('api.reports.download');
 });

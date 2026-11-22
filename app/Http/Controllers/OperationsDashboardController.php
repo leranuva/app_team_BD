@@ -4,15 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\LogisticsPermission;
 use App\Enums\LogisticsRole;
-use App\Enums\ShiftStatus;
-use App\Models\Attendance;
 use App\Models\JobScope;
 use App\Models\JobSite;
 use App\Models\MaterialList;
 use App\Models\ScopePhoto;
-use App\Models\Scopes\LogisticsVisibilityScope;
 use App\Models\Shift;
 use App\Models\User;
+use App\Support\ClockPanel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -30,7 +28,7 @@ class OperationsDashboardController
         return Inertia::render('Dashboard', [
             'timeZone' => config('app.business_timezone'),
             'canOpenAdmin' => $canOpenAdmin,
-            'clock' => fn () => $this->clockPanel($user),
+            'clock' => fn () => app(ClockPanel::class)->for($user),
             'sites' => $canOpenAdmin
                 ? JobSite::visibleTo($user)->orderBy('name')->limit(20)->get(['id', 'name', 'address'])
                 : [],
@@ -111,24 +109,5 @@ class OperationsDashboardController
             'name' => $scope->name,
             'active_photos_count' => $scope->photos_count,
         ];
-    }
-
-    private function clockPanel(User $user): array
-    {
-        $open = Attendance::withoutGlobalScope(LogisticsVisibilityScope::class)->where('user_id', $user->id)
-            ->whereNull('clocked_out_at')
-            ->with(['jobSite' => fn ($site) => $site->withoutGlobalScope(LogisticsVisibilityScope::class)->withTrashed()->select('id', 'name')])
-            ->first(['id', 'shift_id', 'job_site_id', 'clocked_in_at', 'geofence_flagged']);
-
-        $shifts = $open ? [] : Shift::forUser($user)->where('user_id', $user->id)
-            ->whereIn('status', [ShiftStatus::Programmed->value, ShiftStatus::Confirmed->value])
-            ->whereDoesntHave('attendance')
-            ->where('ends_at', '>=', now())
-            ->when(config('attendance.clock_in_window_minutes') !== null, fn ($query) => $query
-                ->where('starts_at', '>=', now()->subMinutes(config('attendance.clock_in_window_minutes'))))
-            ->with('jobSite:id,name')->orderBy('starts_at')->limit(10)
-            ->get(['id', 'job_site_id', 'starts_at']);
-
-        return ['open' => $open, 'shifts' => $shifts];
     }
 }

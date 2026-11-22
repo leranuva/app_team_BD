@@ -90,6 +90,44 @@ class AttendanceService
         }, attempts: 3);
     }
 
+    public function flagManualCorrection(Attendance $attendance, User $actor, CarbonInterface $newIn, CarbonInterface $newOut, string $reason): Attendance
+    {
+        return DB::transaction(function () use ($attendance, $actor, $newIn, $newOut, $reason): Attendance {
+            $locked = Attendance::withoutGlobalScope(LogisticsVisibilityScope::class)->lockForUpdate()->findOrFail($attendance->id);
+            Gate::forUser($actor)->authorize('correct', $locked);
+
+            if ($newOut->lessThanOrEqualTo($newIn)) {
+                throw ValidationException::withMessages(['clock_out_at' => 'La salida debe ser posterior a la entrada.']);
+            }
+
+            $others = Attendance::withoutGlobalScope(LogisticsVisibilityScope::class)
+                ->where('user_id', $locked->user_id)
+                ->whereKeyNot($locked->id);
+
+            if ((clone $others)
+                ->where('clocked_in_at', '<', $newOut)
+                ->where(fn ($query) => $query->whereNull('clocked_out_at')->orWhere('clocked_out_at', '>', $newIn))
+                ->exists()) {
+                throw ValidationException::withMessages(['clock_in_at' => 'La corrección se solapa con otra asistencia.']);
+            }
+
+            $history = (clone $others)
+                ->where('clocked_out_at', '>', $this->calculator->weekStart($newIn)->utc())
+                ->where('clocked_out_at', '<=', $newIn)
+                ->orderBy('clocked_in_at')
+                ->get(['clocked_in_at', 'clocked_out_at']);
+
+            $locked->correctedBy($actor, $reason)->forceFill([
+                'clocked_in_at' => $newIn,
+                'clocked_out_at' => $newOut,
+                'corrected_by' => $actor->id,
+                'correction_reason' => $reason,
+            ] + $this->calculator->calculate($newIn, $newOut, $history))->save();
+
+            return $locked->refresh();
+        }, attempts: 3);
+    }
+
     private function ensureWindow(CarbonInterface $scheduled, CarbonImmutable $now, string $key): void
     {
         $minutes = config('attendance.'.$key);

@@ -22,6 +22,11 @@ class AttendanceResource extends JsonResource
             'regular_minutes' => $this->regular_minutes,
             'overtime_minutes' => $this->overtime_minutes,
             'double_time_minutes' => $this->double_time_minutes,
+            'status' => $this->status,
+            'corrected_by' => $this->corrected_by,
+            'correction_reason' => $this->correction_reason,
+            'updated_at' => $this->updated_at?->setTimezone($zone)->toIso8601String(),
+            'can_correct' => (bool) $request->user()?->can('correct', $this->resource),
         ];
     }
 }
