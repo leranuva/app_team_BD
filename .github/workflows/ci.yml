@@ -72,6 +72,23 @@ jobs:
 
       - run: vendor/bin/pint --test
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/cache@v4
+        id: npm-modules
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+        if: steps.npm-modules.outputs.cache-hit != 'true'
+
+      - run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
       - run: php artisan test
 
   frontend:
