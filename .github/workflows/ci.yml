@@ -97,6 +97,8 @@ jobs:
       - run: npm run build
 
       - run: npx vitest run
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: "1"
 
   build:
     name: build
