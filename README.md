@@ -574,6 +574,8 @@ No hay workflow de deploy. Laravel Cloud despliega desde el panel al recibir `ma
 
 ## Despliegue
 
+- [Hostinger VPS deployment guide](docs/deploy-hostinger-vps.md).
+
 Laravel Cloud es el camino principal: Postgres, Redis, bucket privado y backups salen del panel. Forge queda como apéndice para un VPS que ya exista. Este bloque no despliega.
 
 - [Laravel Cloud](docs/deploy-laravel-cloud.md)

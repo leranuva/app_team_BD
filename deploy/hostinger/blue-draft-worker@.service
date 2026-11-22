@@ -1,0 +1,17 @@
+[Unit]
+Description=Blue Draft Team Laravel queues (%i)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/blue-draft-team
+ExecStart=/usr/bin/php8.3 artisan queue:work database --queue=%I --sleep=3 --tries=3 --timeout=120 --max-time=3600
+Restart=always
+RestartSec=3
+TimeoutStopSec=150
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target

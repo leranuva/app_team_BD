@@ -1,0 +1,1 @@
+* * * * * www-data cd /var/www/blue-draft-team && /usr/bin/php8.3 artisan schedule:run >> storage/logs/scheduler.log 2>&1
