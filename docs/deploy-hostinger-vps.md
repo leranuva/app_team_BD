@@ -1,8 +1,8 @@
 # Deploy Blue Draft Team on a Hostinger VPS
 
-This guide uses Ubuntu 24.04, Nginx, PHP 8.3-FPM, Node.js 22.12+, Composer 2 and PostgreSQL 16. Laravel serves the application and Vite compiles the React assets at deploy time. The proposed hostname is `team.bluedraft.cc`. Use the actual hostname in both the Nginx configuration and `APP_URL` before enabling HTTPS.
+This guide uses Ubuntu 24.04, Nginx, PHP 8.3-FPM, Node.js 22.12+, Composer 2 and PostgreSQL 16. Laravel serves the application and Vite compiles the React assets at deploy time. The production hostname is `bluedraft.site`.
 
-Hostinger supports PostgreSQL on VPS plans. [Hostinger database support](https://www.hostinger.com/support/which-databases-and-data-tools-are-supported-at-hostinger/)
+Hostinger supports PostgreSQL on VPS plans. Web and Cloud hosting databases use MariaDB. This deployment requires PostgreSQL because the current attendance migrations use a partial unique index to enforce one open punch per worker. [Hostinger database support](https://www.hostinger.com/support/which-databases-and-data-tools-are-supported-at-hostinger/)
 
 ## Prepare the server
 
@@ -24,7 +24,7 @@ Choose **Super Admin** in the account creation command. Preserve the production 
 ## Serve the application
 
 1. Point DNS for the chosen hostname to the VPS. Copy `deploy/hostinger/nginx.conf` to a site configuration and check the hostname, web root and PHP-FPM socket. Enable the site and run `sudo nginx -t` before reloading Nginx.
-2. Issue a TLS certificate and enable HTTP-to-HTTPS redirection with Certbot, for example `sudo certbot --nginx -d team.bluedraft.cc`. If DNS has an AAAA record, confirm it points to this VPS before requesting a certificate.
+2. Issue a TLS certificate and enable HTTP-to-HTTPS redirection with Certbot using `sudo certbot --nginx -d bluedraft.site`. If DNS has an AAAA record, confirm it points to this VPS before requesting a certificate.
 3. Install the queue unit and the scheduler. Confirm the web server uses the same environment as the workers and scheduler.
 
 ```bash
