@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -28,8 +29,10 @@ return new class extends Migration
             $table->decimal('consumed_quantity', 12, 3)->nullable();
             $table->unsignedInteger('unit_cost_cents')->nullable();
             $table->text('notes')->nullable();
-            $table->index('material_list_id');
-            $table->index('material_id');
+            if ($this->needsItemIndexes()) {
+                $table->index('material_list_id');
+                $table->index('material_id');
+            }
         });
 
         Schema::create('material_list_counters', function (Blueprint $table): void {
@@ -45,8 +48,10 @@ return new class extends Migration
         Schema::dropIfExists('material_list_counters');
 
         Schema::table('material_list_items', function (Blueprint $table): void {
-            $table->dropIndex(['material_list_id']);
-            $table->dropIndex(['material_id']);
+            if ($this->needsItemIndexes()) {
+                $table->dropIndex(['material_list_id']);
+                $table->dropIndex(['material_id']);
+            }
             $table->dropColumn([
                 'requested_quantity', 'approved_quantity', 'delivered_quantity',
                 'consumed_quantity', 'unit_cost_cents', 'notes',
@@ -60,5 +65,11 @@ return new class extends Migration
             $table->dropConstrainedForeignId('approved_by');
             $table->dropColumn(['code', 'title', 'notes', 'ordered_at', 'delivered_at', 'consumed_at', 'cancelled_reason']);
         });
+    }
+
+    private function needsItemIndexes(): bool
+    {
+        // InnoDB already indexes both foreign keys and may adopt an explicit index in their place.
+        return ! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
     }
 };
