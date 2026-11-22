@@ -1,4 +1,4 @@
-﻿# Logística de Obra
+# Logística de Obra
 
 Aplicación interna para una constructora en Nueva York. La Fase 0 entrega autenticación, alta de cuentas internas, panel de obras y el esquema para desarrollar los módulos de logística.
 
@@ -486,7 +486,7 @@ Los botones de fichaje y de navegación miden al menos 48 px. Los diálogos usan
 
 El workflow es [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Corre en cada push y en cada pull request hacia `main`. Sustituye a `tests.yml` para no lanzar la suite dos veces.
 
-Tres jobs: `tests` (PHP 8.3, PostgreSQL 16, `pint --test`, `npm run build`, `php artisan test`), `frontend` (Node 20, otra compilación y Vitest) y `build`, que solo pasa si los otros dos pasaron. El job de PHP compila los assets porque las pruebas de Inertia leen `public/build/manifest.json`. Un fallo de Pint nombra el archivo sin formato. Un fallo de base casi siempre es `DB_HOST`, `DB_DATABASE` o `DB_USERNAME`: tienen que coincidir con el servicio `constructora_testing` / `constructora_test`. Un fallo de Vite por memoria ya lleva `NODE_OPTIONS=--max-old-space-size=4096`.
+Tres jobs: `tests` (PHP 8.3, PostgreSQL 16, `pint --test`, `npm run build`, `php artisan test`), `frontend` (Node 20, otra compilación y Vitest) y `build`, que solo pasa si los otros dos pasaron. El job de PHP compila los assets porque las pruebas de Inertia leen `public/build/manifest.json`. Un fallo de Pint nombra el archivo sin formato. Un fallo de base casi siempre es `DB_HOST`, `DB_DATABASE` o `DB_USERNAME`: tienen que coincidir con el servicio `constructora_testing` / `constructora_test`. Un fallo de Vite por memoria ya lleva `NODE_OPTIONS=--max-old-space-size=4096`. La corrida verde [44981558003](https://github.com/leranuva/app_team_BD/actions/runs/44981558003) tardó 1 min 32 s de reloj (tests 1 min 22 s, frontend 23 s, build 3 s), por debajo de los 10 minutos. `actions/checkout`, `actions/setup-node` y `actions/cache` están en la major v5: su runtime es Node 24. La aplicación sigue compilando con Node 20, fijado en `node-version`.
 
 Si el repositorio es público, el estado se puede mostrar con:
 
