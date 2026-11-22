@@ -480,3 +480,39 @@ Los botones de fichaje y de navegación miden al menos 48 px. Los diálogos usan
 
 `@axe-core/react` no está instalado. Este bloque no tiene una auditoría formal de cumplimiento, así que el checklist de arriba es la verificación. Para una revisión institucional: `npm install -D axe-core @axe-core/react` y, en un test, `const { default: axe } = await import('axe-core')` sobre el contenedor renderizado.
 
+
+
+## CI/CD
+
+El workflow es [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Corre en cada push y en cada pull request hacia `main`. Sustituye a `tests.yml` para no lanzar la suite dos veces.
+
+Tres jobs: `tests` (PHP 8.3, PostgreSQL 16, `pint --test`, `php artisan test`), `frontend` (Node 20, `npm run build`, Vitest) y `build`, que solo pasa si los otros dos pasaron. Un fallo de Pint nombra el archivo sin formato. Un fallo de base casi siempre es `DB_HOST`, `DB_DATABASE` o `DB_USERNAME`: tienen que coincidir con el servicio `constructora_testing` / `constructora_test`. Un fallo de Vite por memoria ya lleva `NODE_OPTIONS=--max-old-space-size=4096`.
+
+Si el repositorio es público, el estado se puede mostrar con:
+
+```text
+https://github.com/leranuva/app_team_BD/actions/workflows/ci.yml/badge.svg
+```
+
+No hay workflow de deploy. Laravel Cloud despliega desde el panel al recibir `main`.
+
+## Despliegue
+
+Laravel Cloud es el camino principal: Postgres, Redis, bucket privado y backups salen del panel. Forge queda como apéndice para un VPS que ya exista. Este bloque no despliega.
+
+- [Laravel Cloud](docs/deploy-laravel-cloud.md)
+- [Forge](docs/deploy-forge.md)
+- [Operación](docs/operations-runbook.md)
+
+## Primer Super Admin en producción
+
+`php artisan db:seed --force` una vez, después de migrar. Solo crea roles y permisos. No crea usuarios y no carga datos de obra.
+
+En la máquina de la aplicación:
+
+```text
+php artisan logistics:create-worker
+```
+
+Elige el rol `Super Admin`. La contraseña pide al menos 12 caracteres. El comando pregunta nombre, correo y contraseña; no lee variables de entorno.
+

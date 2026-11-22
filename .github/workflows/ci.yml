@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: testing
+      APP_TIMEZONE: America/New_York
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: constructora_testing
+      DB_USERNAME: constructora_test
+      DB_PASSWORD: ci-postgres
+      DB_URL: ""
+      QUEUE_CONNECTION: sync
+      FILESYSTEM_DISK: local
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: constructora_testing
+          POSTGRES_USER: constructora_test
+          POSTGRES_PASSWORD: ci-postgres
+          TZ: America/New_York
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U constructora_test -d constructora_testing"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, pgsql, mbstring, xml, gd, zip, bcmath, exif, intl
+          coverage: none
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+            vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - run: cp .env.example .env
+
+      - run: php artisan key:generate
+
+      - run: php artisan migrate --force
+
+      - run: vendor/bin/pint --test
+
+      - run: php artisan test
+
+  frontend:
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/cache@v4
+        id: npm-modules
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+        if: steps.npm-modules.outputs.cache-hit != 'true'
+
+      - run: npm run build
+
+      - run: npx vitest run
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: [tests, frontend]
+    steps:
+      - run: echo "tests y frontend en verde"
