@@ -7,6 +7,7 @@ use App\Models\Shift;
 use App\Models\User;
 use App\Notifications\AttendanceOutsideGeofenceNotification;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -165,4 +166,13 @@ it('keeps an attendance open on an outside checkout and alerts its supervisor', 
     expect(Attendance::sole()->clocked_out_at)->toBeNull();
     Notification::assertSentTo($supervisor, AttendanceOutsideGeofenceNotification::class,
         fn ($notification) => $notification->toDatabase($supervisor)['operation'] === 'salida');
+});
+
+it('enforces one open attendance per worker in the database', function (): void {
+    $first = Attendance::factory()->for($this->shift)->create(['clocked_out_at' => now()->addHour()]);
+    $open = fn () => Attendance::factory()->for(Shift::factory()->for($this->worker, 'worker'))->create();
+
+    expect($first->clocked_out_at)->not->toBeNull();
+    expect($open()->clocked_out_at)->toBeNull();
+    expect($open)->toThrow(QueryException::class);
 });

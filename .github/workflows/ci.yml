@@ -16,15 +16,23 @@ concurrency:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database: pgsql
+            port: 5432
+          - database: mariadb
+            port: 3306
     env:
       APP_ENV: testing
       APP_TIMEZONE: America/New_York
-      DB_CONNECTION: pgsql
+      DB_CONNECTION: ${{ matrix.database }}
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
+      DB_PORT: ${{ matrix.port }}
       DB_DATABASE: constructora_testing
       DB_USERNAME: constructora_test
-      DB_PASSWORD: ci-postgres
+      DB_PASSWORD: ci-database
       DB_URL: ""
       QUEUE_CONNECTION: sync
       FILESYSTEM_DISK: local
@@ -33,11 +41,11 @@ jobs:
       MAIL_MAILER: array
     services:
       postgres:
-        image: postgres:16
+        image: ${{ matrix.database == 'pgsql' && 'postgres:16' || '' }}
         env:
           POSTGRES_DB: constructora_testing
           POSTGRES_USER: constructora_test
-          POSTGRES_PASSWORD: ci-postgres
+          POSTGRES_PASSWORD: ci-database
           TZ: America/New_York
         ports:
           - 5432:5432
@@ -46,13 +54,27 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      mariadb:
+        image: ${{ matrix.database == 'mariadb' && 'mariadb:10.11' || '' }}
+        env:
+          MARIADB_DATABASE: constructora_testing
+          MARIADB_USER: constructora_test
+          MARIADB_PASSWORD: ci-database
+          MARIADB_RANDOM_ROOT_PASSWORD: '1'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo_pgsql, pgsql, mbstring, xml, gd, zip, bcmath, exif, intl
+          extensions: pdo_pgsql, pgsql, pdo_mysql, mbstring, xml, gd, zip, bcmath, exif, intl
           coverage: none
 
       - uses: actions/cache@v5

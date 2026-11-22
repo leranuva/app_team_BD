@@ -33,6 +33,10 @@ return new class extends Migration
      */
     private function restoreOpenAttendanceIndex(): void
     {
+        if (DB::getDriverName() !== 'sqlite') {
+            return;
+        }
+
         DB::statement('DROP INDEX IF EXISTS attendances_one_open_per_worker');
         DB::statement('CREATE UNIQUE INDEX attendances_one_open_per_worker ON attendances (user_id) WHERE clocked_out_at IS NULL');
     }
