@@ -62,6 +62,25 @@ return [
             'report' => false,
         ],
 
+        // Same private bucket as s3, under exports/. Objects are temporary:
+        // hand them out with Storage::disk('exports')->temporaryUrl($path, now()->addMinutes(15)).
+        // Never switch this disk to public visibility.
+        'exports' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'root' => 'exports',
+            'options' => ['ACL' => env('AWS_OBJECT_ACL', 'bucket-owner-full-control')],
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

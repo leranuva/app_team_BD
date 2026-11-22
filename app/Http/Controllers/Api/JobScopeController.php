@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateJobScopeProgressRequest;
 use App\Http\Resources\JobScopeResource;
 use App\Models\JobScope;
 use App\Models\JobSite;
@@ -10,6 +11,7 @@ use App\Models\Scopes\LogisticsVisibilityScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class JobScopeController extends Controller
 {
@@ -48,6 +50,25 @@ class JobScopeController extends Controller
             ->withOperationalCounts()
             ->findOrFail($scope);
         Gate::authorize('read', $record);
+
+        return (new JobScopeResource($record))->response();
+    }
+
+    public function update(UpdateJobScopeProgressRequest $request, int $scope): JsonResponse
+    {
+        $record = JobScope::withoutGlobalScope(LogisticsVisibilityScope::class)->findOrFail($scope);
+        Gate::authorize('update', $record);
+
+        $progress = $request->integer('progress');
+        if ($progress === 100 && $record->status !== 'completed') {
+            throw ValidationException::withMessages([
+                'progress' => 'El avance del 100 % solo corresponde a un alcance completado.',
+            ]);
+        }
+
+        $record->progress = $progress;
+        $record->save();
+        $record->load(['jobSite:id,name', 'supervisor:id,name']);
 
         return (new JobScopeResource($record))->response();
     }

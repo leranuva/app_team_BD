@@ -27,6 +27,9 @@ return [
     | Drivers: "sync", "database", "beanstalkd", "sqs", "redis",
     |          "deferred", "background", "failover", "null"
     |
+    | Named queues: "attendance" recalculates weekly hours after a correction.
+    | "reports" builds Excel exports that exceed reports.sync_threshold.
+    |
     */
 
     'connections' => [

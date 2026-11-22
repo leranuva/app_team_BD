@@ -81,6 +81,7 @@ export default function Dashboard({ timeZone, canOpenAdmin, sites, shifts, lists
                             <p key={shift.id} className="mt-2 text-sm">{shift.job_site.name} · {dateFormat.format(new Date(shift.starts_at))}</p>
                         ))}
                         <p className="mt-2 text-sm text-slate-700">{clock.open ? 'Asistencia abierta' : 'Sin fichaje abierto'}</p>
+                        <a href="/worker/today" className="mt-3 inline-flex min-h-12 items-center text-sm font-semibold underline">Abrir jornada</a>
                     </section>
                 )}
                 {profile === 'admin' && (
@@ -141,6 +142,8 @@ export default function Dashboard({ timeZone, canOpenAdmin, sites, shifts, lists
                 </div>
                 {profile === 'supervisor' && (
                     <nav aria-label="Accesos del supervisor" className="mt-5 flex flex-wrap gap-2">
+                        <a href="/supervisor/team" className="inline-flex min-h-12 items-center rounded-lg border px-4 text-sm font-semibold">Equipo</a>
+                        <a href="/supervisor/scopes" className="inline-flex min-h-12 items-center rounded-lg border px-4 text-sm font-semibold">Avance</a>
                         <a href="/shifts/calendar" className="inline-flex min-h-12 items-center rounded-lg border px-4 text-sm font-semibold">Turnos</a>
                         <a href="/change-orders" className="inline-flex min-h-12 items-center rounded-lg border px-4 text-sm font-semibold">Change Orders</a>
                         <a href="/material-lists" className="inline-flex min-h-12 items-center rounded-lg border px-4 text-sm font-semibold">Materiales</a>

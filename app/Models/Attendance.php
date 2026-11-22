@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasLogisticsVisibility;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,8 @@ class Attendance extends Model
     protected $attributes = ['geofence_flagged' => false];
 
     private ?User $recordedBy = null;
+
+    private ?string $correctionReason = null;
 
     protected $fillable = ['job_site_id', 'user_id', 'shift_id', 'clocked_in_at', 'clocked_out_at', 'in_latitude', 'in_longitude', 'out_latitude', 'out_longitude'];
 
@@ -60,12 +63,33 @@ class Attendance extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function corrector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'corrected_by');
+    }
+
+    /**
+     * Derived from the punch and the correction. There is no status column.
+     */
+    protected function status(): Attribute
+    {
+        return Attribute::get(function (): string {
+            if ($this->corrected_by !== null) {
+                return 'corrected';
+            }
+
+            return $this->clocked_out_at === null ? 'open' : 'closed';
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->useLogName('attendances')
             ->logOnly(['user_id', 'shift_id', 'job_site_id', 'clocked_in_at', 'clocked_out_at',
-                'geofence_flagged', 'duration_minutes', 'regular_minutes', 'overtime_minutes', 'double_time_minutes'])
-            ->logOnlyDirty()->dontSubmitEmptyLogs();
+                'geofence_flagged', 'duration_minutes', 'regular_minutes', 'overtime_minutes', 'double_time_minutes',
+                'corrected_by', 'correction_reason'])
+            ->logOnlyDirty()->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $event): string => $this->correctionReason !== null ? 'attendance.corrected' : $event);
     }
 
     public function recordedBy(User $user): static
@@ -75,10 +99,21 @@ class Attendance extends Model
         return $this;
     }
 
+    public function correctedBy(User $user, string $reason): static
+    {
+        $this->recordedBy = $user;
+        $this->correctionReason = $reason;
+
+        return $this;
+    }
+
     public function tapActivity(Activity $activity): void
     {
         if ($this->recordedBy !== null) {
             $activity->causer()->associate($this->recordedBy);
+        }
+        if ($this->correctionReason !== null) {
+            $activity->properties = $activity->properties->put('reason', $this->correctionReason);
         }
     }
 }

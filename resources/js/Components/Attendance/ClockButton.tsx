@@ -1,7 +1,18 @@
 import { router } from '@inertiajs/react';
 import axios from 'axios';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+
+const PENDING_CLOCK_KEY = 'pending-clock-in';
+
+type PendingPunch = {
+    shift_id: number;
+    timestamp: string;
+    lat: number;
+    lng: number;
+    accuracy: number;
+    direction: 'in' | 'out';
+};
 
 type Punch = {
     shift_id: number; clocked_in_at: string; clocked_out_at?: string | null;
@@ -26,7 +37,61 @@ function getPosition(): Promise<GeolocationPosition> {
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 }));
 }
 
-export default function ClockButton({ clock, timeZone }: { clock: ClockPanel; timeZone: string }) {
+function browserStorage(): Storage | null {
+    try {
+        return window.localStorage ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function readPending(): PendingPunch | null {
+    const store = browserStorage();
+    if (!store) return null;
+    try {
+        const raw = store.getItem(PENDING_CLOCK_KEY);
+        if (!raw) return null;
+        const pending = JSON.parse(raw) as PendingPunch;
+        if (!pending?.shift_id || !pending.timestamp) {
+            store.removeItem(PENDING_CLOCK_KEY);
+            return null;
+        }
+
+        return pending;
+    } catch {
+        return null;
+    }
+}
+
+async function flushPending(): Promise<void> {
+    const pending = readPending();
+    if (!pending || navigator.onLine === false) return;
+
+    try {
+        const response = await axios.post(
+            pending.direction === 'out' ? '/api/attendances/clock-out' : '/api/attendances/clock-in',
+            {
+                shift_id: pending.shift_id,
+                lat: pending.lat,
+                lng: pending.lng,
+                accuracy: pending.accuracy,
+                timestamp: pending.timestamp,
+            },
+            { headers: { Accept: 'application/json' } },
+        );
+        browserStorage()?.removeItem(PENDING_CLOCK_KEY);
+        toast.success(response.data.message, { toasterId: 'attendance' });
+        router.reload({ only: ['clock'] });
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 422) {
+            browserStorage()?.removeItem(PENDING_CLOCK_KEY);
+            toast.error('La ventana de fichaje expiró. Contacta a tu supervisor para corregir la asistencia.', { toasterId: 'attendance' });
+            return;
+        }
+    }
+}
+
+export default function ClockButton({ clock, timeZone, field = false }: { clock: ClockPanel; timeZone: string; field?: boolean }) {
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [optimistic, setOptimistic] = useState<{ source: ClockPanel; punch: Punch } | null>(null);
     const [lastDuration, setLastDuration] = useState<number | null>(null);
@@ -39,6 +104,14 @@ export default function ClockButton({ clock, timeZone }: { clock: ClockPanel; ti
     const format = new Intl.DateTimeFormat('es-US', { dateStyle: 'medium', timeStyle: 'short', timeZone });
     const busyLabel = stage === 'location' ? 'Obteniendo ubicación…' : 'Registrando…';
 
+    useEffect(() => {
+        const sync = () => { void flushPending(); };
+        window.addEventListener('online', sync);
+        if (navigator.onLine) void flushPending();
+
+        return () => window.removeEventListener('online', sync);
+    }, []);
+
     async function punch() {
         const shiftId = open?.shift_id ?? selected?.id;
         if (busy.current || !shiftId) return;
@@ -46,13 +119,31 @@ export default function ClockButton({ clock, timeZone }: { clock: ClockPanel; ti
         setStage('location');
         try {
             const position = await getPosition();
-            setStage('saving');
-            const response = await axios.post(open ? '/api/attendances/clock-out' : '/api/attendances/clock-in', {
+            const payload: PendingPunch = {
                 shift_id: shiftId,
                 lat: position.coords.latitude,
                 lng: position.coords.longitude,
                 accuracy: position.coords.accuracy,
                 timestamp: new Date(position.timestamp).toISOString(),
+                direction: open ? 'out' : 'in',
+            };
+            if (navigator.onLine === false) {
+                const store = browserStorage();
+                if (!store) {
+                    toast.error('No se pudo guardar el fichaje en este dispositivo.', { toasterId: 'attendance' });
+                    return;
+                }
+                store.setItem(PENDING_CLOCK_KEY, JSON.stringify(payload));
+                toast.message('Fichaje pendiente de sincronizar. Se enviará cuando recuperes conexión.', { toasterId: 'attendance' });
+                return;
+            }
+            setStage('saving');
+            const response = await axios.post(open ? '/api/attendances/clock-out' : '/api/attendances/clock-in', {
+                shift_id: payload.shift_id,
+                lat: payload.lat,
+                lng: payload.lng,
+                accuracy: payload.accuracy,
+                timestamp: payload.timestamp,
             }, { headers: { Accept: 'application/json' } });
 
             const attendance: Punch = response.data.data;
@@ -84,17 +175,19 @@ export default function ClockButton({ clock, timeZone }: { clock: ClockPanel; ti
     }
 
     return (
-        <section aria-label="Fichaje" className="mb-5 rounded-xl border border-slate-200 bg-white p-5">
+        <section aria-label="Fichaje" className={field
+            ? 'mb-5 rounded-xl border border-slate-300 bg-slate-100 p-5 text-base text-slate-950'
+            : 'mb-5 rounded-xl border border-slate-200 bg-white p-5'}>
             <h2 className="text-lg font-semibold text-slate-950">Fichaje</h2>
             {open ? (
-                <p className="mt-2 text-sm text-slate-700">
+                <p className={field ? 'mt-2 text-base text-slate-950' : 'mt-2 text-sm text-slate-700'}>
                     {open.job_site?.name && <strong>{open.job_site.name} · </strong>}
                     Entrada registrada a las {format.format(new Date(open.clocked_in_at))}
                 </p>
             ) : choices.length > 0 ? (
-                <label className="mt-3 grid max-w-md gap-2 text-sm font-medium">
+                <label className={field ? 'mt-3 grid max-w-md gap-2 text-base font-medium text-slate-950' : 'mt-3 grid max-w-md gap-2 text-sm font-medium'}>
                     Turno
-                    <select className="min-h-11 rounded-lg border-slate-300" value={selected?.id ?? ''}
+                    <select className={field ? 'min-h-16 rounded-lg border-slate-300 text-base' : 'min-h-11 rounded-lg border-slate-300'} value={selected?.id ?? ''}
                         disabled={stage !== 'idle'} onChange={(event) => setSelectedId(Number(event.target.value))}>
                         {choices.map((shift) => <option key={shift.id} value={shift.id}>
                             {shift.job_site?.name} · {format.format(new Date(shift.starts_at))}
@@ -102,15 +195,17 @@ export default function ClockButton({ clock, timeZone }: { clock: ClockPanel; ti
                     </select>
                 </label>
             ) : (
-                <p className="mt-2 text-sm text-slate-700">No tienes turnos pendientes de fichar.</p>
+                <p className={field ? 'mt-2 text-base text-slate-950' : 'mt-2 text-sm text-slate-700'}>No tienes turnos pendientes de fichar.</p>
             )}
             {(open || selected) && (
                 <button type="button" onClick={() => { void punch(); }} disabled={stage !== 'idle'}
-                    className="mt-4 min-h-12 min-w-12 rounded-lg bg-slate-900 px-6 font-semibold text-white disabled:opacity-70">
+                    className={field
+                        ? 'mt-4 min-h-16 min-w-16 rounded-lg bg-slate-950 px-6 text-lg font-semibold text-white disabled:opacity-70'
+                        : 'mt-4 min-h-12 min-w-12 rounded-lg bg-slate-900 px-6 font-semibold text-white disabled:opacity-70'}>
                     {stage === 'idle' ? (open ? 'Registrar salida' : 'Registrar entrada') : busyLabel}
                 </button>
             )}
-            <p role="status" className="mt-2 text-sm text-slate-700">
+            <p role="status" className={field ? 'mt-2 text-base text-slate-950' : 'mt-2 text-sm text-slate-700'}>
                 {stage !== 'idle' ? busyLabel : lastDuration !== null
                     ? 'Último turno registrado: ' + lastDuration + ' min' : ''}
             </p>

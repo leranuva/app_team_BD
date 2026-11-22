@@ -6,6 +6,9 @@ type Site = { id: number; name: string };
 type Auth = { user: { id: number; name: string; email: string } | null; role?: string | null; sites?: Site[] };
 
 const workerLinks = [
+    { href: '/worker/today', label: 'Hoy' },
+    { href: '/worker/schedule', label: 'Mi semana' },
+    { href: '/worker/history', label: 'Historial' },
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/shifts/calendar', label: 'Mis turnos' },
     { href: '/dashboard#fichaje', label: 'Fichaje' },
@@ -13,6 +16,9 @@ const workerLinks = [
 
 const supervisorLinks = [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/supervisor/team', label: 'Equipo' },
+    { href: '/supervisor/scopes', label: 'Avance' },
+    { href: '/supervisor/hours', label: 'Horas' },
     { href: '/dashboard#obras', label: 'Mis obras' },
     { href: '/shifts/calendar', label: 'Turnos' },
     { href: '/change-orders', label: 'Change Orders' },

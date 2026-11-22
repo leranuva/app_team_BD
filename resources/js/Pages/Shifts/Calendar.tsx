@@ -71,7 +71,9 @@ export function calendarInitialView(desktop: boolean): 'timeGridWeek' | 'listWee
     return desktop ? 'timeGridWeek' : 'listWeek';
 }
 
-export default function Calendar({ options, canEdit, timeZone }: { options: Options; canEdit: boolean; timeZone: string }) {
+export default function Calendar({ options, canEdit, timeZone, title = 'Calendario de turnos' }: {
+    options: Options; canEdit: boolean; timeZone: string; title?: string;
+}) {
     const sites = options.job_sites.map(({ id, name }) => ({ value: String(id), label: name }));
     const [filters, setFilters] = useState(() => readFilters(sites, options));
     const [touch] = useState(() => window.matchMedia('(pointer: coarse)').matches);
@@ -196,10 +198,10 @@ export default function Calendar({ options, canEdit, timeZone }: { options: Opti
 
     return (
         <AppLayout>
-            <Head title="Calendario de turnos" />
+            <Head title={title} />
             <Toaster id="shifts" containerAriaLabel="Avisos del calendario" />
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
-                <h1 className="mb-6 text-3xl font-semibold tracking-tight text-slate-950">Calendario de turnos</h1>
+                <h1 className="mb-6 text-3xl font-semibold tracking-tight text-slate-950">{title}</h1>
                 <section aria-label="Filtros de turnos" className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-3">
                     <FilterSelect label="Obra" defaultLabel="Todas las obras" options={sites}
                         value={filters.job_site_id} onChange={(value) => changeFilter('job_site_id', value)} />
