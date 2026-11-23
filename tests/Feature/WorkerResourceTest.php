@@ -11,6 +11,7 @@ use App\Models\JobSite;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -61,6 +62,27 @@ class WorkerResourceTest extends TestCase
         $this->assertSame('Contact', $worker->emergency_contact['name']);
         $this->assertCount(1, $worker->identity_documents);
         Storage::disk('s3')->assertExists($worker->identity_documents[0]);
+    }
+
+    public function test_administrator_can_select_and_change_the_primary_site_from_the_edit_form(): void
+    {
+        $this->actingAs($this->worker(LogisticsRole::Administrator));
+        $worker = $this->worker(LogisticsRole::Carpenter);
+        $previous = $this->site('Queens');
+        $next = $this->site('Brooklyn');
+        $worker->update(['primary_job_site_id' => $previous->id]);
+        $worker->jobSites()->attach($previous);
+
+        Livewire::test(EditWorker::class, ['record' => $worker->id])
+            ->assertFormFieldExists('primary_job_site_id', fn (Select $field): bool => $field->isPreloaded()
+                && ($field->getOptions()[$next->id] ?? null) === $next->name)
+            ->fillForm(['primary_job_site_id' => $next->id])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue($worker->fresh()->primaryJobSite->is($next));
+        $this->assertTrue($worker->jobSites()->whereKey($previous->id)->exists());
+        $this->assertTrue($worker->jobSites()->whereKey($next->id)->exists());
     }
 
     public function test_supervisor_can_edit_only_contact_fields_and_only_for_their_team(): void

@@ -69,7 +69,8 @@ class WorkerResource extends Resource
                     TextInput::make('password')->label('Initial password')->password()->required()
                         ->minLength(12)->maxLength(72)->visibleOn('create'),
                     Select::make('role_id')->label('Role')->options(fn () => self::roles())->required(),
-                    Select::make('primary_job_site_id')->label('Primary job site')->searchable()
+                    Select::make('primary_job_site_id')->label('Primary job site')->searchable()->preload()
+                        ->options(fn (): array => JobSite::query()->orderBy('name')->orderBy('id')->limit(30)->pluck('name', 'id')->all())
                         ->getSearchResultsUsing(fn (string $search) => JobSite::whereLike('name', '%'.$search.'%')->orderBy('name')->limit(30)->pluck('name', 'id')->all())
                         ->getOptionLabelUsing(fn ($value) => JobSite::find($value)?->name),
                     TextInput::make('hourly_rate')->label('Hourly rate (USD)')->numeric()->minValue(0)->maxValue(99999999.99)->step(0.01),
