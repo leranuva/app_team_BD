@@ -18,7 +18,7 @@ class EditMaterialList extends EditRecord
         $data['items'] = $this->getRecord()->items()->get()->map(fn ($item): array => [
             'material_id' => $item->material_id,
             'budgeted_quantity' => $item->budgeted_quantity,
-            'requested_quantity' => $item->requested_quantity,
+            'requested_quantity' => $item->requestedQuantityForDisplay(),
             'unit_cost_cents' => $item->unit_cost_cents,
             'notes' => $item->notes,
         ])->all();

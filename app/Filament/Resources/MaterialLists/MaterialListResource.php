@@ -78,7 +78,7 @@ class MaterialListResource extends Resource
                 Select::make('material_id')->label('Material')->required()->searchable()
                     ->options(fn (): array => Material::query()->active()->orderBy('name')->pluck('name', 'id')->all()),
                 TextInput::make('budgeted_quantity')->label('Budgeted')->numeric()->default(0)->minValue(0),
-                TextInput::make('requested_quantity')->label('Requested')->numeric()->required()->minValue(0),
+                TextInput::make('requested_quantity')->label('Requested')->numeric()->step('0.001')->required()->minValue(0),
                 TextInput::make('unit_cost_cents')->label('Cost (cents)')->numeric()->integer()->minValue(0)
                     ->helperText('Optional invoice note.'),
                 Textarea::make('notes')->label('Notes')->maxLength(2000),
@@ -108,7 +108,8 @@ class MaterialListResource extends Resource
                     ->imageHeight(64),
                 TextEntry::make('material.name')->label('Material'),
                 TextEntry::make('budgeted_quantity')->label('Budgeted'),
-                TextEntry::make('requested_quantity')->label('Requested'),
+                TextEntry::make('requested_quantity')->label('Requested')
+                    ->state(fn (MaterialListItem $record): ?string => $record->requestedQuantityForDisplay()),
                 TextEntry::make('approved_quantity')->label('Approved')->placeholder('—'),
                 TextEntry::make('delivered_quantity')->label('Delivered')->placeholder('—'),
                 TextEntry::make('consumed_quantity')->label('Consumed')->placeholder('—'),

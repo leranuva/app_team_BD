@@ -72,4 +72,15 @@ describe('material lists', () => {
         fireEvent.change(input, { target: { value: '1' } });
         expect(confirm.disabled).toBe(false);
     });
+
+    it('shows requested quantities without trailing decimal zeros', () => {
+        render(<Show list={{ ...list, items: [
+            item,
+            { ...item, id: 9, requested_quantity: '2.500' },
+            { ...item, id: 10, requested_quantity: '0.000' },
+        ] }} />);
+
+        expect(screen.getAllByRole('row').slice(1).map((row) => row.children[2].textContent))
+            .toEqual(['2', '2.5', '0']);
+    });
 });

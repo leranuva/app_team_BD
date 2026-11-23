@@ -43,6 +43,10 @@ const labels: Record<string, string> = {
 
 const toaster = { toasterId: 'material-lists' } as const;
 
+function displayRequestedQuantity(quantity: string | null) {
+    return quantity?.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+}
+
 export default function Show({ list }: { list: MaterialListDetail }) {
     const [dialog, setDialog] = useState<'approve' | 'delivery' | 'consumption' | 'cancel' | null>(null);
     const [reason, setReason] = useState('');
@@ -137,7 +141,7 @@ export default function Show({ list }: { list: MaterialListDetail }) {
                                     </div>
                                 </td>
                                 <td>{item.budgeted_quantity}</td>
-                                <td>{item.requested_quantity}</td>
+                                <td>{displayRequestedQuantity(item.requested_quantity)}</td>
                                 <td>{item.approved_quantity ?? '—'}</td>
                                 <td>{item.delivered_quantity ?? '—'}</td>
                                 <td>{item.consumed_quantity ?? '—'}</td>

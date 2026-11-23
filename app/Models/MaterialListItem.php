@@ -19,6 +19,13 @@ class MaterialListItem extends Model
         'unit_cost_cents', 'notes',
     ];
 
+    public function requestedQuantityForDisplay(): ?string
+    {
+        $quantity = $this->requested_quantity;
+
+        return $quantity === null ? null : rtrim(rtrim($quantity, '0'), '.');
+    }
+
     protected function casts(): array
     {
         return [
