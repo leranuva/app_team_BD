@@ -10,16 +10,18 @@ uses(TestCase::class, RefreshDatabase::class);
 it('imports the nyc sheetrock catalog as the drywall category', function (): void {
     $this->artisan('materials:import-sheetrock')
         ->assertSuccessful()
-        ->expectsOutputToContain('[OK] Imported: 35 · Updated: 0 · Skipped: 0 · Total: 35');
+        ->expectsOutputToContain('[OK] Imported: 31 · Updated: 0 · Skipped: 0 · Total: 31');
 
     $panel = Material::query()->where('code', 'SR-FIR-001')->first();
 
-    expect(Material::query()->count())->toBe(35)
-        ->and(Material::query()->where('category', 'Drywall')->count())->toBe(35)
+    expect(Material::query()->count())->toBe(31)
+        ->and(Material::query()->where('category', 'Drywall')->count())->toBe(31)
+        ->and(Material::query()->where('name', 'not like', 'USG Sheetrock %')->count())->toBe(0)
         ->and(config('materials.categories'))->toContain('Drywall')
         ->and($panel->unit)->toBe('Sheet')
         ->and($panel->name)->toContain('Firecode X')
         ->and($panel->notes)->toContain('Fire-Rated (Type X & C)')
+        ->and($panel->notes)->toContain('UL Type SCX')
         ->and($panel->notes)->not->toContain('17.48');
 });
 
