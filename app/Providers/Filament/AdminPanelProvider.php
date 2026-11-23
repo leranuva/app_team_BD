@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->passwordReset()
             ->brandName('Blue Draft')
             ->brandLogo(fn () => view('filament.brand'))
             ->brandLogoHeight('3rem')
