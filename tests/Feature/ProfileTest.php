@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\JobSite;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -41,6 +43,23 @@ class ProfileTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_profile_lists_only_the_users_assigned_sites_without_requiring_shifts(): void
+    {
+        $primary = JobSite::factory()->create(['name' => 'Brooklyn']);
+        $secondary = JobSite::factory()->create(['name' => 'Queens']);
+        JobSite::factory()->create(['name' => 'Unassigned']);
+        $user = User::factory()->create(['primary_job_site_id' => $primary->id]);
+        $user->jobSites()->attach($secondary);
+
+        $this->actingAs($user)->get('/profile')->assertOk()->assertInertia(
+            fn (AssertableInertia $page) => $page->component('Profile/Edit')
+                ->where('primaryJobSiteId', $primary->id)
+                ->has('jobSites', 2)
+                ->where('jobSites.0.id', $primary->id)
+                ->where('jobSites.1.id', $secondary->id),
+        );
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
