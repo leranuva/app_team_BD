@@ -47,6 +47,7 @@ class MaterialListResource extends JsonResource
                     'code' => $item->material->code,
                     'name' => $item->material->name,
                     'unit' => $item->material->unit,
+                    'reference_photo_url' => $item->material->referencePhotoUrl(),
                 ],
             ])->all(),
             'can_submit' => $user !== null && $user->can('submit', $list),

@@ -12,6 +12,7 @@ use App\Models\JobScope;
 use App\Models\JobSite;
 use App\Models\Material;
 use App\Models\MaterialList;
+use App\Models\MaterialListItem;
 use App\Services\MaterialListService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -23,6 +24,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -100,6 +102,10 @@ class MaterialListResource extends Resource
             TextEntry::make('cancelled_reason')->label('Cancellation reason')->placeholder('—')->columnSpanFull(),
             TextEntry::make('notes')->label('Notes')->placeholder('—')->columnSpanFull(),
             RepeatableEntry::make('items')->label('Items')->schema([
+                ImageEntry::make('reference_photo')->label('Reference photo')
+                    ->state(fn (MaterialListItem $record): ?string => $record->material?->referencePhotoUrl())
+                    ->hidden(fn (MaterialListItem $record): bool => $record->material?->referencePhotoUrl() === null)
+                    ->imageHeight(64),
                 TextEntry::make('material.name')->label('Material'),
                 TextEntry::make('budgeted_quantity')->label('Budgeted'),
                 TextEntry::make('requested_quantity')->label('Requested'),

@@ -13,7 +13,7 @@ export type MaterialListItemRow = {
     delivered_quantity: string | null;
     consumed_quantity: string | null;
     unit_cost_cents: number | null;
-    material: { id: number; name: string; unit: string } | null;
+    material: { id: number; name: string; unit: string; reference_photo_url?: string | null } | null;
 };
 
 export type MaterialListDetail = {
@@ -124,7 +124,18 @@ export default function Show({ list }: { list: MaterialListDetail }) {
                     <tbody>
                         {list.items.map((item) => (
                             <tr key={item.id}>
-                                <td>{item.material?.name}</td>
+                                <td className="py-2 pr-3">
+                                    <div className="flex items-center gap-3">
+                                        {item.material?.reference_photo_url && (
+                                            <a href={item.material.reference_photo_url} target="_blank" rel="noreferrer"
+                                                aria-label={`Open reference photo of ${item.material.name}`}>
+                                                <img src={item.material.reference_photo_url} alt="" loading="lazy"
+                                                    className="h-14 w-16 max-w-none rounded border border-slate-200 bg-white object-contain" />
+                                            </a>
+                                        )}
+                                        {item.material?.name}
+                                    </div>
+                                </td>
                                 <td>{item.budgeted_quantity}</td>
                                 <td>{item.requested_quantity}</td>
                                 <td>{item.approved_quantity ?? '—'}</td>

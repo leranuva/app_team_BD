@@ -14,6 +14,11 @@ it('imports the nyc sheetrock catalog as the drywall category', function (): voi
 
     $panel = Material::query()->where('code', 'SR-FIR-001')->first();
 
+    foreach (Material::all() as $material) {
+        expect($material->referencePhotoUrl())->not->toBeNull();
+        expect(public_path(ltrim(parse_url($material->referencePhotoUrl(), PHP_URL_PATH), '/')))->toBeFile();
+    }
+
     expect(Material::query()->count())->toBe(31)
         ->and(Material::query()->where('category', 'Drywall')->count())->toBe(31)
         ->and(Material::query()->where('name', 'not like', 'USG Sheetrock %')->count())->toBe(0)

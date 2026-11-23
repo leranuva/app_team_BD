@@ -70,4 +70,11 @@ class Material extends Model
     {
         return "{$this->name} ({$this->unit})";
     }
+
+    public function referencePhotoUrl(): ?string
+    {
+        $photo = config('materials.sheetrock_photos')[$this->code] ?? null;
+
+        return $photo === null ? null : asset("material-photos/sheetrock/{$photo}.jpg");
+    }
 }
