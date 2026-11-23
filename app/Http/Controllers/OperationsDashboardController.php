@@ -8,9 +8,11 @@ use App\Models\JobScope;
 use App\Models\JobSite;
 use App\Models\MaterialList;
 use App\Models\ScopePhoto;
+use App\Models\Scopes\LogisticsVisibilityScope;
 use App\Models\Shift;
 use App\Models\User;
 use App\Support\ClockPanel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -77,7 +79,9 @@ class OperationsDashboardController
             return [];
         }
 
-        return JobSite::query()->readableBy($user)->orderBy('name')->limit(20)->get(['id', 'name'])
+        return JobSite::withoutGlobalScope(LogisticsVisibilityScope::class)
+            ->where(fn (Builder $sites) => $sites->assignedTo($user)->orWhere->readableBy($user))
+            ->orderBy('name')->limit(20)->get(['id', 'name'])
             ->map(fn (JobSite $site): array => [
                 'id' => $site->id,
                 'name' => $site->name,

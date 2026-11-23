@@ -114,6 +114,23 @@ class LogisticsAccessTest extends TestCase
             ->has('sites', 0));
     }
 
+    public function test_worker_dashboard_lists_assigned_sites_without_shifts(): void
+    {
+        $worker = $this->worker(LogisticsRole::Carpenter);
+        $primary = $this->site('Brooklyn');
+        $secondary = $this->site('Queens');
+        $this->site('Unassigned');
+        $worker->update(['primary_job_site_id' => $primary->id]);
+        $worker->jobSites()->attach($secondary);
+
+        $this->actingAs($worker)->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('shifts', 0)
+            ->has('mySites', 2)
+            ->where('mySites.0.id', $primary->id)
+            ->where('mySites.0.read_only', true)
+            ->where('mySites.1.id', $secondary->id));
+    }
+
     public function test_attendance_must_match_the_shift_site_and_worker(): void
     {
         $worker = User::factory()->create();

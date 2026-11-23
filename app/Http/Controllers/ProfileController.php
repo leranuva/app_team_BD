@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\JobSite;
-use App\Models\Scopes\LogisticsVisibilityScope;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -21,11 +19,7 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
-        $jobSites = JobSite::withoutGlobalScope(LogisticsVisibilityScope::class)
-            ->where(function (Builder $sites) use ($user): void {
-                $sites->whereKey($user->primary_job_site_id)
-                    ->orWhereHas('users', fn (Builder $users) => $users->whereKey($user->getKey()));
-            })
+        $jobSites = JobSite::assignedTo($user)
             ->orderBy('name')
             ->orderBy('id')
             ->get(['id', 'name', 'address']);
