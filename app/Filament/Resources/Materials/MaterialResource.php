@@ -176,7 +176,7 @@ class MaterialResource extends Resource
                 $component->state(in_array($current, config($configKey), true) ? $current : self::OTHER);
             })
             ->helperText($field === 'category'
-                ? 'CWICR categories are stored as supplied. Select “Other” to enter a custom value up to '.$max.' characters.'
+                ? 'Select “Other” to enter a custom category up to '.$max.' characters.'
                 : 'Select “Other” to enter a custom unit up to '.$max.' characters.');
     }
 

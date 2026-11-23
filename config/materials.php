@@ -4,13 +4,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Catálogo CWICR
+    | Material catalog
     |--------------------------------------------------------------------------
     |
-    | Las categorías CWICR se guardan tal cual vienen en su CSV. Drywall es
-    | una categoría propia de esta aplicación: el Select de Filament debe
-    | leer esta misma lista. La unidad cabe en 20 caracteres: kg, m3, m2,
-    | m, pcs, set, Sheet, 100m, 100m2, 1000pcs.
+    | Keep the original CWICR category names for existing materials. The
+    | same list supplies the Filament category selector and filter.
     |
     */
 
@@ -30,6 +28,24 @@ return [
         'Glass & Glazing',
         'General',
         'Drywall',
+        'Steel Studs & Track',
+        'Lumber & S4S Trim Boards',
+        'Plywood & Panels',
+        'Masonry',
+        'Mouldings',
+        'Sound Control',
+        'Decking',
+        'Tools & Fasteners',
+        'Temporary Floor Protection',
+        'Jobsite Supplies',
+        'Janitorial Supplies',
+        'Safety Supplies',
+        'Paint & Sundries',
+        'Adhesives',
+        'Tape',
+        'Caulk',
+        'Doors + Door Hardware',
+        'Windows',
     ],
 
     'units' => [
