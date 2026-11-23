@@ -83,7 +83,7 @@ class WorkerTodayController extends Controller
      * Lists are not linked to a shift. Items appear only when the worker is assigned
      * a list whose scope is the scope of today's shift.
      *
-     * @return list<array{id: int, material: string|null, quantity: string, unit: string|null}>
+     * @return list<array{id: int, material: string|null, quantity: string, unit: string|null, reference_photo_url: string|null}>
      */
     private function materials(int $userId, Shift $shift): array
     {
@@ -95,7 +95,7 @@ class WorkerTodayController extends Controller
             ->whereHas('materialList', fn ($lists) => $lists
                 ->where('assigned_to', $userId)
                 ->where('job_scope_id', $shift->job_scope_id))
-            ->with('material:id,name,unit')
+            ->with('material:id,code,name,unit')
             ->orderBy('id')
             ->limit(30)
             ->get()
@@ -104,6 +104,7 @@ class WorkerTodayController extends Controller
                 'material' => $item->material?->name,
                 'quantity' => (string) ($item->requested_quantity ?? $item->budgeted_quantity),
                 'unit' => $item->material?->unit,
+                'reference_photo_url' => $item->material?->referencePhotoUrl(),
             ])
             ->values()
             ->all();

@@ -16,11 +16,13 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -51,6 +53,7 @@ class MaterialResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
+            self::referencePhoto(),
             TextInput::make('code')->label('Code')->required()->maxLength(255)
                 ->unique(ignoreRecord: true)
                 ->disabledOn('edit')
@@ -70,6 +73,7 @@ class MaterialResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
+            self::referencePhoto(),
             TextEntry::make('code')->label('Code'),
             TextEntry::make('name')->label('Name'),
             TextEntry::make('unit')->label('Unit'),
@@ -86,6 +90,9 @@ class MaterialResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
+            ImageColumn::make('reference_photo')->label('Photo')
+                ->state(fn (Material $record): ?string => $record->referencePhotoUrl())
+                ->imageHeight(48),
             TextColumn::make('code')->label('Code')->searchable()->sortable(),
             TextColumn::make('name')->label('Name')->searchable()->sortable()->limit(48),
             TextColumn::make('unit')->label('Unit'),
@@ -122,6 +129,15 @@ class MaterialResource extends Resource
             'view' => ViewMaterial::route('/{record}'),
             'edit' => EditMaterial::route('/{record}/edit'),
         ];
+    }
+
+    private static function referencePhoto(): ImageEntry
+    {
+        return ImageEntry::make('reference_photo')->label('Reference photo')
+            ->state(fn (?Material $record): ?string => $record?->referencePhotoUrl())
+            ->visible(fn (?Material $record): bool => $record?->referencePhotoUrl() !== null)
+            ->url(fn (?Material $record): ?string => $record?->referencePhotoUrl(), shouldOpenInNewTab: true)
+            ->imageHeight(220)->columnSpanFull();
     }
 
     /**

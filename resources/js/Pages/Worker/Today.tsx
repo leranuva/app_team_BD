@@ -4,7 +4,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Head } from '@inertiajs/react';
 import { Toaster } from 'sonner';
 
-type MaterialRow = { id: number; material: string | null; quantity: string; unit: string | null };
+type MaterialRow = { id: number; material: string | null; quantity: string; unit: string | null; reference_photo_url?: string | null };
 
 type ShiftToday = {
     id: number;
@@ -76,7 +76,16 @@ export default function Today({ timeZone, shifts, clock: panel }: {
                                 <ul className="mt-2 divide-y divide-slate-200">
                                     {shift.materials.map((item) => (
                                         <li key={item.id} className="py-2">
-                                            {item.material ?? 'Material'} · {item.quantity}{item.unit ? ` ${item.unit}` : ''}
+                                            <div className="flex items-center gap-3">
+                                                {item.reference_photo_url && (
+                                                    <a href={item.reference_photo_url} target="_blank" rel="noreferrer"
+                                                        aria-label={`Open reference photo of ${item.material ?? 'material'}`}>
+                                                        <img src={item.reference_photo_url} alt="" loading="lazy"
+                                                            className="h-12 w-16 rounded border border-slate-200 bg-white object-contain" />
+                                                    </a>
+                                                )}
+                                                <span>{item.material ?? 'Material'} · {item.quantity}{item.unit ? ` ${item.unit}` : ''}</span>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>

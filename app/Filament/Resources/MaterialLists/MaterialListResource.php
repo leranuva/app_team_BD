@@ -75,8 +75,11 @@ class MaterialListResource extends Resource
             TextInput::make('title')->label('Title')->required()->maxLength(200),
             Textarea::make('notes')->label('Notes')->maxLength(5000)->columnSpanFull(),
             Repeater::make('items')->label('Materials')->columnSpanFull()->minItems(1)->schema([
-                Select::make('material_id')->label('Material')->required()->searchable()
+                Select::make('material_id')->label('Material')->required()->searchable()->live()
                     ->options(fn (): array => Material::query()->active()->orderBy('name')->pluck('name', 'id')->all()),
+                ImageEntry::make('selected_material_photo')->label('Reference photo')
+                    ->state(fn (Get $get): ?string => Material::find($get('material_id'))?->referencePhotoUrl())
+                    ->imageHeight(80),
                 TextInput::make('budgeted_quantity')->label('Budgeted')->numeric()->default(0)->minValue(0),
                 TextInput::make('requested_quantity')->label('Requested')->numeric()->step('0.001')->required()->minValue(0),
                 TextInput::make('unit_cost_cents')->label('Cost (cents)')->numeric()->integer()->minValue(0)

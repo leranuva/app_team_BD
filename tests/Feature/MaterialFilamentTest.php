@@ -28,6 +28,16 @@ beforeEach(function (): void {
     $this->supervisor = User::factory()->create()->assignRole(LogisticsRole::Supervisor->value);
 });
 
+it('shows the Sheetrock reference photo on the catalog and product pages', function (): void {
+    $this->actingAs($this->admin);
+    $material = Material::factory()->create(['code' => 'SR-FIR-001', 'category' => 'Drywall']);
+    $photoPath = '/material-photos/sheetrock/firecode-x.jpg';
+
+    $this->get('/admin/materials')->assertOk()->assertSee($photoPath, false);
+    $this->get('/admin/materials/'.$material->id)->assertOk()->assertSee($photoPath, false);
+    $this->get('/admin/materials/'.$material->id.'/edit')->assertOk()->assertSee($photoPath, false);
+});
+
 it('creates, filters and deactivates materials for an administrator', function (): void {
     $this->actingAs($this->admin);
 
