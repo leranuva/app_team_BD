@@ -1,12 +1,8 @@
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
     <div
         class="job-site-address"
-        x-load
-        x-load-src="{{ asset('js/job-site-address.js') }}"
-        x-data="jobSiteAddress({
-            wire: $wire,
-            path: @js($getStatePath()),
-        })"
+        data-address-path="{{ $getStatePath() }}"
+        x-data="window.blueDraftJobSiteAddress($wire, $el.dataset.addressPath)"
         x-on:focusout="if (!$el.contains($event.relatedTarget)) close()"
     >
         <x-filament::input.wrapper :valid="! $errors->has($getStatePath())">

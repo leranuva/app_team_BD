@@ -1,6 +1,5 @@
-const geosearch = 'https://geosearch.planninglabs.nyc/v2/autocomplete';
-
-export default function jobSiteAddress({ wire, path }) {
+window.blueDraftJobSiteAddress = function (wire, path) {
+    const geosearch = 'https://geosearch.planninglabs.nyc/v2/autocomplete';
     const parent = path.slice(0, -'address'.length);
     const latitude = parent + 'latitude';
     const longitude = parent + 'longitude';
@@ -35,6 +34,7 @@ export default function jobSiteAddress({ wire, path }) {
             request = current;
             this.loading = true;
             this.message = 'Looking up addresses…';
+            const timeout = setTimeout(() => current.abort(), 8_000);
 
             try {
                 const params = new URLSearchParams({ text, size: '6' });
@@ -63,6 +63,7 @@ export default function jobSiteAddress({ wire, path }) {
                     this.message = 'Address lookup is unavailable. You can enter the address and coordinates manually.';
                 }
             } finally {
+                clearTimeout(timeout);
                 if (request === current) {
                     request = null;
                     this.loading = false;
@@ -105,4 +106,4 @@ export default function jobSiteAddress({ wire, path }) {
             this.close();
         },
     };
-}
+};
