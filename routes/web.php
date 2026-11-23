@@ -14,9 +14,8 @@ use App\Http\Controllers\WorkerScheduleController;
 use App\Http\Controllers\WorkerTodayController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
-
 Route::middleware('auth')->group(function () {
+    Route::get('/', OperationsDashboardController::class)->name('home');
     Route::get('/dashboard', OperationsDashboardController::class)->name('dashboard');
     Route::get('/worker/today', WorkerTodayController::class)->name('worker.today');
     Route::get('/worker/schedule', WorkerScheduleController::class)->name('worker.schedule');
