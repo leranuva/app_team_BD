@@ -100,8 +100,12 @@ class User extends Authenticatable implements FilamentUser
         return $this->jobSites()->whereIn('job_sites.status', ['planned', 'active']);
     }
 
-    public function canResumeWorkToday(): bool
+    public function canClockInAtAssignedSite(): bool
     {
+        if ($this->hasRole(LogisticsRole::Supervisor->value)) {
+            return true;
+        }
+
         $today = now(config('app.business_timezone'))->startOfDay()->utc();
 
         return $this->hasAnyRole(self::operationalRoles()) && $this->attendances()

@@ -233,7 +233,7 @@ export default function ClockButton({ clock, timeZone, field = false }: { clock:
                         {choices.map((shift) => <option key={shift.id} value={shift.id}>
                             {shift.job_site?.name} · {format.format(new Date(shift.starts_at))}
                         </option>)}
-                        {sites.length > 0 && <optgroup label="Resume work">
+                        {sites.length > 0 && <optgroup label="Assigned job sites">
                             {sites.map((option) => <option key={option.id} value={`site:${option.id}`}>{option.name}</option>)}
                         </optgroup>}
                     </select>

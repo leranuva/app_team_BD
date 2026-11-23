@@ -52,7 +52,7 @@ class AttendanceService
             Gate::forUser($worker)->authorize('viewAny', Attendance::class);
             $this->ensureNoOpenAttendance($worker);
             $site = $worker->clockableJobSites()->whereKey($siteId)->first();
-            abort_unless($site && $worker->canResumeWorkToday(), 403, 'You can resume work only at an assigned job site after clocking out today.');
+            abort_unless($site && $worker->canClockInAtAssignedSite(), 403, 'You cannot clock in at this job site without an eligible shift or a prior clock-out today.');
 
             $now = CarbonImmutable::now('UTC')->startOfSecond();
             $window = config('attendance.clock_in_window_minutes');

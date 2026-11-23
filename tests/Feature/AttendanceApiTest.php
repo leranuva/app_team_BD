@@ -153,6 +153,32 @@ it('resumes work at assigned sites after clocking out, including a return to the
     $this->assertDatabaseCount('attendances', 3);
 });
 
+it('lets supervisors clock in and out at their assigned sites without scheduled shifts', function (): void {
+    $supervisor = User::factory()->create()->assignRole(LogisticsRole::Supervisor->value);
+    $first = $this->shift->jobSite;
+    $second = JobSite::factory()->create(['status' => 'active']);
+    $outside = JobSite::factory()->create(['status' => 'active']);
+    $supervisor->jobSites()->attach([$first->id, $second->id]);
+    $position = fn (JobSite $site) => [
+        'lat' => $site->latitude, 'lng' => $site->longitude,
+        'accuracy' => 20, 'timestamp' => now()->toIso8601String(),
+    ];
+
+    $this->actingAs($supervisor)->get('/')->assertInertia(fn (Assert $page) => $page
+        ->has('clock.shifts', 0)->has('clock.sites', 2));
+    $this->postJson('/api/attendances/clock-in', $position($outside) + ['job_site_id' => $outside->id])
+        ->assertForbidden();
+    $shiftId = $this->postJson('/api/attendances/clock-in', $position($first) + ['job_site_id' => $first->id])
+        ->assertCreated()->assertJsonPath('data.job_site_id', $first->id)->json('data.shift_id');
+    $this->postJson('/api/attendances/clock-in', $position($second) + ['job_site_id' => $second->id])
+        ->assertUnprocessable();
+    $this->travel(10)->minutes();
+    $this->postJson('/api/attendances/clock-out', $position($first) + ['shift_id' => $shiftId])
+        ->assertOk()->assertJsonPath('data.duration_minutes', 10);
+    $this->postJson('/api/attendances/clock-in', $position($second) + ['job_site_id' => $second->id])
+        ->assertCreated()->assertJsonPath('data.job_site_id', $second->id);
+});
+
 it('keeps an attendance open on an outside checkout and alerts its supervisor', function (): void {
     Notification::fake();
     $supervisor = User::factory()->create()->assignRole(LogisticsRole::Supervisor->value);

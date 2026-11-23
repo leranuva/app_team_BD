@@ -40,7 +40,7 @@ class ClockPanel
                 'job_site' => $shift->jobSite?->only(['name']),
             ]);
 
-        $sites = $open || $user->canResumeWorkToday()
+        $sites = $open || $user->canClockInAtAssignedSite()
             ? $user->clockableJobSites()->orderBy('job_sites.name')->get(['job_sites.id', 'job_sites.name'])
                 ->map(fn ($site): array => $site->only(['id', 'name']))
             : collect();
